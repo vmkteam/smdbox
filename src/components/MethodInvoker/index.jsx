@@ -25,22 +25,22 @@ class MethodInvoker extends React.PureComponent {
         response: PropTypes.object,
         method: PropTypes.string.isRequired
     };
-    
+
     static defaultProps = {
         error: null,
         loading: false,
         response: undefined,
         formData: {}
     };
-    
+
     handleSubmit = (params) => {
         this.props.runMethod(params);
     };
-    
+
     handleSubmitRaw = (params) => {
         this.props.runMethod(params, true);
     };
-    
+
     renderResponseIfNeeded() {
         if (this.props.loading) {
             return (
@@ -49,7 +49,7 @@ class MethodInvoker extends React.PureComponent {
                 </div>
             );
         }
-        
+
         if (this.props.error && this.props.error.message) {
             return (
                 <Alert bsStyle="danger" onDismiss={this.props.hideError}>
@@ -59,7 +59,7 @@ class MethodInvoker extends React.PureComponent {
                     {
                         this.props.error.data && (
                             <div>
-                                {this.props.error.data}
+                                {JSON.stringify(this.props.error.data)}
                             </div>
                         )
                     }
@@ -67,7 +67,7 @@ class MethodInvoker extends React.PureComponent {
             );
         }
         if (isUndefined(this.props.response)) return null;
-        
+
         return (
             <div className={b('result')}>
                 <JsonViewer json={this.props.response} />
@@ -104,8 +104,8 @@ class MethodInvoker extends React.PureComponent {
                         </Tab>
                     </Tabs>
                 </div>
-                
-                
+
+
                 {
                     this.renderResponseIfNeeded()
                 }
