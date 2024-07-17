@@ -6,7 +6,7 @@ import Project from 'containers/Project';
 import MethodViewer from 'containers/MethodViewer';
 import History from 'containers/History';
 import Sidebar from 'containers/Sidebar';
-import { Grid, Col, Row, Modal } from 'react-bootstrap';
+import {Grid, Col, Row, Modal, Button} from 'react-bootstrap';
 
 import './Application.scss';
 
@@ -19,6 +19,7 @@ class Application extends React.Component {
         closeSettings: PropTypes.func.isRequired,
         openSettings: PropTypes.func.isRequired,
         clearProject: PropTypes.func.isRequired,
+        project: PropTypes.object.isRequired,
     };
 
 
@@ -37,6 +38,10 @@ class Application extends React.Component {
         this.setState({ showHistory: true });
     };
 
+    onRefresh = () => {
+        this.props.fetchSmd(this.props.project.smdUrl, true);
+    };
+
     render() {
         return (
             <ErrorBoundary>
@@ -48,6 +53,15 @@ class Application extends React.Component {
                             </div>
                             { this.props.isProjectCreated &&
                             <ul className="nav navbar-nav navbar-right">
+                                <li>
+                                    <Button
+                                        type="button"
+                                        onClick={this.onRefresh}
+                                        disabled={this.props.project.smdScheme === null || this.props.project.fetchingSchema}
+                                    >
+                                        Refresh SMD schema
+                                    </Button>
+                                </li>
                                 <li><a onClick={this.showHistory}>History</a></li>
                                 <li><a onClick={this.props.openSettings}>Settings</a></li>
                                 <li><a onClick={this.props.clearProject}>Exit</a></li>
