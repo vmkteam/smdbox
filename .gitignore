@@ -24,6 +24,19 @@ TODO.md
 # NPM packages folder.
 node_modules/
 
+# TypeScript / Vite
+*.tsbuildinfo
+.vite/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright/
+e2e/videos/
+
+# Note: dist/ is intentionally tracked — it is the bundle served via jsDelivr.
+
 # Brunch folder for temporary files.
 tmp/
 
