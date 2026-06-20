@@ -1,0 +1,119 @@
+/**
+ * Design tokens — "Steel" palette (from the SMD Box design system).
+ *
+ * A cool, instrument-grade scheme: a sky-blue primary over slate neutrals, with
+ * an ocean (sky-800) navbar. Neutral surfaces/text/borders override the
+ * Bootstrap 5 `--bs-*` theme so the whole app adapts to light/dark via the
+ * `data-bs-theme` attribute. Imported once in `main.tsx`, after Bootstrap, so
+ * these win the cascade. Accents are mirrored in `tokens.ts`.
+ */
+:root {
+  /* --- SMD Box accents --- */
+  --sb-color-primary: #0284c7; /* sky-600 — actions, links, selection */
+  --sb-color-primary-hover: #0369a1; /* sky-700 */
+  --sb-color-success: #059669; /* emerald-600 — Try/Create, required */
+  --sb-color-success-hover: #047857; /* emerald-700 */
+  --sb-color-danger: #e11d48; /* rose-600 — errors, destructive */
+  --sb-color-danger-hover: #be123c; /* rose-700 */
+  --sb-color-star: #f59e0b; /* amber-500 — the one warm pop: favorites */
+
+  /* JSON syntax colors (light) — used by the highlighter and raw editor */
+  --sb-tok-key: #075985;
+  --sb-tok-str: #047857;
+  --sb-tok-num: #b45309;
+  --sb-tok-bool: #7c3aed;
+
+  /* Navbar — ocean (sky-800), constant across light/dark */
+  --sb-navbar-bg: #075985;
+  --sb-navbar-fg: #e0f2fe;
+  --sb-navbar-line: rgba(224, 242, 254, 0.32);
+
+  /* Spacing */
+  --sb-space-xs: 4px;
+  --sb-space-sm: 8px;
+  --sb-space-md: 12px;
+  --sb-space-lg: 16px;
+  --sb-space-xl: 24px;
+
+  /* Radius */
+  --sb-radius-sm: 4px;
+  --sb-radius-md: 6px;
+  --sb-radius-pill: 999px;
+
+  /* Font size */
+  --sb-font-xs: 11px;
+  --sb-font-sm: 12px;
+  --sb-font-code: 12.5px;
+  --sb-font-body: 13px;
+  --sb-font-md: 16px;
+  --sb-font-lg: 20px;
+
+  /* Font family */
+  --sb-font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --sb-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* --- Bootstrap theme mapped to Steel: slate neutrals, LIGHT --- */
+:root {
+  --bs-body-bg: #ffffff;
+  --bs-body-color: #0f172a; /* slate-900 — primary text */
+  --bs-emphasis-color: #020617; /* slate-950 */
+  --bs-secondary-bg: #e2e8f0; /* slate-200 — hover fills */
+  --bs-secondary-color: rgba(15, 23, 42, 0.6); /* muted text */
+  --bs-tertiary-bg: #f1f5f9; /* slate-100 — code blocks, inset panels */
+  --bs-border-color: #cbd5e1; /* slate-300 — hairline borders */
+
+  --bs-primary: #0284c7;
+  --bs-primary-rgb: 2, 132, 199;
+  --bs-primary-bg-subtle: #e0f2fe; /* sky-100 — selected nav-pill fill */
+  --bs-primary-text-emphasis: #075985; /* sky-800 — selected nav-pill text */
+  --bs-primary-border-subtle: #bae6fd; /* sky-200 */
+
+  --bs-success: #059669;
+  --bs-success-rgb: 5, 150, 105;
+  --bs-success-bg-subtle: #d1fae5; /* emerald-100 — alert/badge soft bg */
+  --bs-success-border-subtle: #a7f3d0; /* emerald-200 */
+  --bs-success-text-emphasis: #065f46; /* emerald-800 */
+  --bs-danger: #e11d48;
+  --bs-danger-rgb: 225, 29, 72;
+  --bs-danger-bg-subtle: #ffe4e6; /* rose-100 */
+  --bs-danger-border-subtle: #fecdd3; /* rose-200 */
+  --bs-danger-text-emphasis: #9f1239; /* rose-800 */
+
+  --bs-link-color: #0284c7;
+  --bs-link-color-rgb: 2, 132, 199;
+  --bs-link-hover-color: #0369a1;
+  --bs-focus-ring-color: rgba(2, 132, 199, 0.25);
+}
+
+/* --- Slate neutrals, DARK --- */
+[data-bs-theme='dark'] {
+  --bs-body-bg: #0f172a; /* slate-900 */
+  --bs-body-color: #e2e8f0; /* slate-200 */
+  --bs-emphasis-color: #ffffff;
+  --bs-secondary-bg: #334155; /* slate-700 */
+  --bs-secondary-color: rgba(226, 232, 240, 0.65);
+  --bs-tertiary-bg: #1e293b; /* slate-800 */
+  --bs-border-color: #475569; /* slate-600 */
+
+  --bs-primary-bg-subtle: #082f49; /* deep sky — selected nav-pill fill */
+  --bs-primary-text-emphasis: #7dd3fc; /* sky-300 — selected nav-pill text */
+  --bs-primary-border-subtle: #0369a1; /* sky-700 */
+
+  --bs-success-bg-subtle: #022c22;
+  --bs-success-border-subtle: #047857;
+  --bs-success-text-emphasis: #6ee7b7; /* emerald-300 */
+  --bs-danger-bg-subtle: #4c0519;
+  --bs-danger-border-subtle: #be123c;
+  --bs-danger-text-emphasis: #fda4af; /* rose-300 */
+
+  --bs-link-color: #38bdf8; /* sky-400 */
+  --bs-link-hover-color: #7dd3fc; /* sky-300 */
+
+  /* JSON syntax colors (dark) */
+  --sb-tok-key: #7dd3fc;
+  --sb-tok-str: #6ee7b7;
+  --sb-tok-num: #fcd34d;
+  --sb-tok-bool: #c4b5fd;
+}

@@ -1,32 +1,82 @@
-# SMD BOX
+# SMD Box
 
-SMD Box is UI for human-readable displaying of JSON-RPC SMD schemas from remote url, allowing you to call RPC methods live, view and log results.
+SMD Box is a web UI for human-readable JSON-RPC schemas (SMD or OpenRPC): it
+loads a schema from a remote URL, lets you browse methods, call them live, and
+inspect results. The schema format is auto-detected.
+It ships as a single self-contained bundle (`dist/app.js` + `dist/app.css`) and
+is typically embedded via [vmkteam/zenrpc](https://github.com/vmkteam/zenrpc).
 
-## Getting started
-Smdbox script exposes it's initialization to window.smdbox variable. Call window.smdbox() to initialize smdbox with default options, which are:
-```javascript
-const defaultOptions = {
-    endpoint: undefined,             // api endpoint url
-    smdUrl: undefined,               // smd scheme url
-    headers: {},                // headers added to each request smdbox makes
-    selector: '#smdbox-root', // element to which smdbox is inserted
-};
-```
-You can override any of this options to pre-fill project options.
+> **v2** — rewritten on Vite + React 19 + TypeScript, with a "Steel" design
+> system (Bootstrap 5 neutrals + sky/emerald/rose/amber accents, light/dark).
 
-For backward-compatibility with previous versions there's a possibility to initialize smdbox without any calls - just leave this block in html (no options can be passed to init this way):
+## Features
+
+- **Schemas** — load SMD or OpenRPC by URL; the format is auto-detected. Add custom request headers.
+- **Browse** — searchable method sidebar with favorites, recent calls, collapsible namespaces and keyboard navigation.
+- **Docs** — per-method input parameters, output type and error codes, including nested type definitions.
+- **Try it out** — an auto-generated form (from the schema) or a raw JSON editor with syntax highlighting; submit with Cmd/Ctrl+Enter.
+- **Calls** — live JSON-RPC requests with cancel and timeout; response timing and size.
+- **Response** — interactive collapsible tree and highlighted raw view, full-text filter, line wrap, fullscreen, copy and download.
+- **Errors** — full JSON-RPC error (code, message, data) shown in the same result panel.
+- **Reuse** — export a request as curl, share a deep link with parameters, save requests, and re-run them from history.
+- **Environments** — save named configuration snapshots (endpoint / schema / headers) and switch between them.
+- **Config** — import/export the whole setup (connection, favorites, saved requests, environments) as JSON.
+- **Comfort** — light/dark theme (Steel palette), state persisted to IndexedDB, reduced-motion friendly.
+
+## Integration
+
+The integration contract is unchanged — load the bundle and initialize:
+
 ```html
-<div id="json-rpc-root"></div>
+<link href="https://vmkteam.github.io/smdbox/app.css" rel="stylesheet" />
+<div id="smdbox-root"></div>
+<script src="https://vmkteam.github.io/smdbox/app.js"></script>
+<script>
+  window.smdbox({
+    selector: '#smdbox-root',     // mount node (default: #smdbox-root)
+    smdUrl: '/rpc/?smd',          // SMD or OpenRPC schema url
+    endpoint: '/rpc/',            // RPC endpoint (derived from the schema if omitted)
+    headers: {},                  // headers added to every request
+  });
+</script>
 ```
 
-* Build:
-    * `yarn run dev` — watches the project with continuous rebuild at localhost:4500
-    * `yarn run prod` — builds minified project for production
-    * `yarn run dist` — same as 'prod', but assets are made without hash (e.g. for deploys from github)
-    * `yarn run clean` — clean production assets
-    * `node index` - runs test smd schema server on localhost:8082/test (use as smd url in settings)
-* Setup your project - set smd-scheme url, your custom headers, and rpc url (Later you can change those params in Setting window)
+For backward compatibility, a bare `<div id="json-rpc-root"></div>` triggers
+auto-initialization without any explicit call — the bundle is self-contained,
+so no extra CSS framework is needed on the host page.
 
-When project is set up you're able to choose methods from list at left sidebar, view method's description, it's input and output params, and run selected method on remote server to see results.
+## Distribution
 
-History of successfull calls and their input/output are shown in "History" window (click History at top navigation).
+- **GitHub Pages** (`https://vmkteam.github.io/smdbox/`) — the v2 bundle, built
+  and published by CI (`.github/workflows/pages.yml`). Use this for new embeds.
+- **jsDelivr `@latest`** (`cdn.jsdelivr.net/gh/vmkteam/smdbox@latest/dist/…`) —
+  serves the committed `dist/`, kept as the **legacy** bundle so existing embeds
+  keep working. `dist/` is therefore frozen and not rebuilt on every change.
+
+## Development
+
+Requires Node ≥ 20.
+
+```bash
+npm install
+npm run dev          # Vite dev server (see index.html)
+npm run build        # type-check + build single bundle into dist/
+npm run typecheck    # tsc --noEmit
+npm run lint         # ESLint
+npm run test         # Vitest unit tests
+npm run test:e2e     # Playwright smoke test (records a video)
+```
+
+> `npm run build` overwrites the committed legacy `dist/`. Restore it with
+> `git checkout -- dist` after building locally — the v2 bundle ships via Pages.
+
+## Layout
+
+- `src/lib/` — framework-agnostic core (SMD→JSON Schema, OpenRPC→SMD, JSON-RPC transport, JSON highlight/filter, persistence)
+- `src/types/smd.ts` — the SMD contract (mirrors zenrpc `smd/model.go`)
+- `src/store/` — Zustand store (persisted to IndexedDB)
+- `src/data/` — TanStack Query: SMD loading and RPC calls
+- `src/components/`, `src/app/` — React UI
+- `src/design/` — design system: tokens (Steel palette) + presentational components
+- `pages/` — the minimal embed page published to GitHub Pages
+- `e2e/` — Playwright demo pages and smoke tests
