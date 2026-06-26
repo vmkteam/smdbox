@@ -110,7 +110,6 @@ function Workspace() {
                         <span
                           role="button"
                           aria-label={`Rename ${env.name}`}
-                          className="text-secondary"
                           onClick={(e) => {
                             e.stopPropagation();
                             const name = window.prompt('Environment name:', env.name)?.trim();
