@@ -24,6 +24,8 @@ export interface SmdboxOptions {
   headers?: Record<string, string>;
   /** CSS selector of the element smdbox mounts into. */
   selector?: string;
+  /** Knowledge-base link shown on the setup screen (defaults to the smdbox repo). */
+  docsUrl?: string;
 }
 
 const DEFAULT_SELECTOR = '#smdbox-root';
@@ -41,10 +43,16 @@ async function init(options: SmdboxOptions = {}): Promise<void> {
   const persisted = await readState<PersistedState>().catch(() => null);
   if (persisted) useStore.getState().hydrate(persisted);
 
-  const pre: Partial<{ smdUrl: string; endpoint: string; headers: Record<string, string> }> = {};
+  const pre: Partial<{
+    smdUrl: string;
+    endpoint: string;
+    headers: Record<string, string>;
+    docsUrl: string;
+  }> = {};
   if (options.smdUrl) pre.smdUrl = options.smdUrl;
   if (options.endpoint) pre.endpoint = options.endpoint;
   if (options.headers && Object.keys(options.headers).length) pre.headers = options.headers;
+  if (options.docsUrl) pre.docsUrl = options.docsUrl;
   if (Object.keys(pre).length) useStore.getState().preconfigure(pre);
 
   startPersistence();

@@ -58,13 +58,19 @@ export interface PersistedState {
   environments: Environment[];
   /** Id of the environment currently applied (null when config is manual). */
   activeEnvironmentId: string | null;
+  /** Sidebar namespaces the user has collapsed (default: all expanded). */
+  collapsedNamespaces: string[];
 }
 
 export interface AppState extends PersistedState {
   /** Transient params to seed the next form mount (re-run / shared link). */
   prefill: { method: string; params: JsonRpcParams } | null;
+  /** Knowledge-base link; empty unless set via window.smdbox({ docsUrl }). Not persisted. */
+  docsUrl: string;
   /** Apply preconfigured values from window.smdbox(options); options win. */
-  preconfigure(partial: Partial<Pick<ProjectConfig, 'endpoint' | 'smdUrl' | 'headers'>>): void;
+  preconfigure(
+    partial: Partial<Pick<ProjectConfig, 'endpoint' | 'smdUrl' | 'headers'>> & { docsUrl?: string },
+  ): void;
   createProject(cfg: { endpoint: string; smdUrl: string; headers: Record<string, string> }): void;
   updateSettings(cfg: { endpoint: string; headers: Record<string, string> }): void;
   clearProject(): void;
@@ -89,7 +95,10 @@ export interface AppState extends PersistedState {
   /** Snapshot the current project config as a named environment. */
   saveEnvironment(name: string): void;
   applyEnvironment(id: string): void;
+  renameEnvironment(id: string, name: string): void;
   deleteEnvironment(id: string): void;
+  /** Collapse/expand a sidebar namespace (persisted). */
+  toggleNamespace(ns: string): void;
   hydrate(state: Partial<PersistedState>): void;
 }
 
@@ -110,9 +119,12 @@ export const useStore = create<AppState>((set) => ({
   saved: [],
   environments: [],
   activeEnvironmentId: null,
+  collapsedNamespaces: [],
   prefill: null,
+  docsUrl: '',
 
-  preconfigure: (partial) => set((s) => ({ project: { ...s.project, ...partial } })),
+  preconfigure: ({ docsUrl, ...rest }) =>
+    set((s) => ({ project: { ...s.project, ...rest }, docsUrl: docsUrl ?? s.docsUrl })),
 
   createProject: ({ endpoint, smdUrl, headers }) =>
     set((s) => ({
@@ -191,10 +203,22 @@ export const useStore = create<AppState>((set) => ({
       };
     }),
 
+  renameEnvironment: (id, name) =>
+    set((s) => ({
+      environments: s.environments.map((e) => (e.id === id ? { ...e, name } : e)),
+    })),
+
   deleteEnvironment: (id) =>
     set((s) => ({
       environments: s.environments.filter((e) => e.id !== id),
       activeEnvironmentId: s.activeEnvironmentId === id ? null : s.activeEnvironmentId,
+    })),
+
+  toggleNamespace: (ns) =>
+    set((s) => ({
+      collapsedNamespaces: s.collapsedNamespaces.includes(ns)
+        ? s.collapsedNamespaces.filter((n) => n !== ns)
+        : [...s.collapsedNamespaces, ns],
     })),
 
   toggleTheme: () =>
@@ -219,6 +243,7 @@ export const useStore = create<AppState>((set) => ({
       saved: state.saved ?? s.saved,
       environments: state.environments ?? s.environments,
       activeEnvironmentId: state.activeEnvironmentId ?? s.activeEnvironmentId,
+      collapsedNamespaces: state.collapsedNamespaces ?? s.collapsedNamespaces,
     })),
 }));
 
@@ -235,8 +260,16 @@ export function startPersistence(): void {
     scheduled = true;
     setTimeout(() => {
       scheduled = false;
-      const { project, selected, history, prefs, saved, environments, activeEnvironmentId } =
-        useStore.getState();
+      const {
+        project,
+        selected,
+        history,
+        prefs,
+        saved,
+        environments,
+        activeEnvironmentId,
+        collapsedNamespaces,
+      } = useStore.getState();
       void writeState({
         project,
         selected,
@@ -245,6 +278,7 @@ export function startPersistence(): void {
         saved,
         environments,
         activeEnvironmentId,
+        collapsedNamespaces,
       } satisfies PersistedState);
     }, PERSIST_DEBOUNCE_MS);
   });

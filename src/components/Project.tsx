@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Form, Spinner } from 'react-bootstrap';
-import { ArrowClockwise, Download, PlusLg, Trash, Upload } from 'react-bootstrap-icons';
+import { ArrowClockwise, Download, PlusLg, Trash } from 'react-bootstrap-icons';
 
 import { refreshSmd, useSmd } from '../data/queries';
 import { defaultSmdUrlFromLocation, deriveEndpoint } from '../lib/smd';
-import { useStore, type Environment, type SavedRequest } from '../store/store';
+import { useStore } from '../store/store';
 
 interface HeaderRow {
   key: string;
@@ -31,7 +31,6 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const project = useStore((s) => s.project);
   const createProject = useStore((s) => s.createProject);
   const updateSettings = useStore((s) => s.updateSettings);
-  const importConfig = useStore((s) => s.importConfig);
   const favorites = useStore((s) => s.prefs.favorites);
   const saved = useStore((s) => s.saved);
   const environments = useStore((s) => s.environments);
@@ -44,7 +43,9 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
     Object.entries(project.headers).map(([key, value]) => ({ key, value })),
   );
   const [debouncedUrl, setDebouncedUrl] = useState(smdUrl);
-  const fileRef = useRef<HTMLInputElement>(null);
+  // Set when the user submits before the schema has finished loading: we kick
+  // off the fetch immediately and enter as soon as it validates (A1).
+  const [pendingSubmit, setPendingSubmit] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedUrl(smdUrl), DEBOUNCE_MS);
@@ -74,13 +75,37 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
     e.preventDefault();
     if (mode === 'settings') {
       updateSettings({ endpoint: effectiveEndpoint, headers: headersObj });
-    } else {
-      createProject({ endpoint: effectiveEndpoint, smdUrl: debouncedUrl, headers: headersObj });
+      onClose?.();
+      return;
     }
-    onClose?.();
+    // Init: enter immediately if the schema is already loaded.
+    if (smd.data) {
+      createProject({ endpoint: effectiveEndpoint, smdUrl: debouncedUrl, headers: headersObj });
+      onClose?.();
+      return;
+    }
+    // Schema not loaded yet: flush the debounce so the fetch starts now, and
+    // let the effect below enter as soon as it succeeds (single click).
+    if (smdUrl.trim()) {
+      setDebouncedUrl(smdUrl);
+      setPendingSubmit(true);
+    }
   };
 
-  const submitDisabled = mode === 'init' && !smd.data;
+  // Complete a pending submit once the schema resolves (success → enter,
+  // error → drop back to the form with its inline feedback).
+  useEffect(() => {
+    if (!pendingSubmit) return;
+    if (smd.data) {
+      createProject({ endpoint: effectiveEndpoint, smdUrl: debouncedUrl, headers: headersObj });
+      setPendingSubmit(false);
+      onClose?.();
+    } else if (smd.isError) {
+      setPendingSubmit(false);
+    }
+  }, [pendingSubmit, smd.data, smd.isError, effectiveEndpoint, debouncedUrl, headersObj, createProject, onClose]);
+
+  const submitDisabled = mode === 'init' && (!smdUrl.trim() || pendingSubmit);
 
   const exportConfig = () => {
     const data = JSON.stringify(
@@ -96,24 +121,6 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
     URL.revokeObjectURL(url);
   };
 
-  const loadConfigFile = async (file: File) => {
-    try {
-      const cfg = JSON.parse(await file.text()) as Partial<{
-        endpoint: string;
-        smdUrl: string;
-        headers: Record<string, string>;
-        favorites: string[];
-        saved: SavedRequest[];
-        environments: Environment[];
-      }>;
-      if (!cfg.smdUrl) return;
-      importConfig(cfg);
-      onClose?.();
-    } catch {
-      // ignore invalid config file
-    }
-  };
-
   return (
     <Form className="sb-project" onSubmit={onSubmit}>
       {mode === 'settings' && (
@@ -123,24 +130,6 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
             <Button type="button" size="sm" variant="outline-secondary" onClick={exportConfig}>
               <Download className="me-1" /> Export config
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline-secondary"
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="me-1" /> Import config
-            </Button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/json"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void loadConfigFile(f);
-              }}
-            />
           </div>
         </div>
       )}
@@ -208,7 +197,15 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
 
       <div className="sb-project__actions">
         <Button type="submit" variant={mode === 'settings' ? 'primary' : 'success'} disabled={submitDisabled}>
-          {mode === 'settings' ? 'Update' : 'Create'}
+          {mode === 'settings' ? (
+            'Update'
+          ) : pendingSubmit ? (
+            <>
+              <Spinner animation="border" size="sm" className="me-1" /> Checking…
+            </>
+          ) : (
+            'Create'
+          )}
         </Button>
         {mode === 'settings' && (
           <Button

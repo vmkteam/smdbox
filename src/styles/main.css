@@ -163,8 +163,14 @@
 }
 
 /* Sidebar */
+/* Keep the search box pinned while the methods list scrolls under it (G1). */
 .sb-sidebar__search {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   margin-bottom: 12px;
+  padding: 4px 0 8px;
+  background: var(--bs-body-bg);
 }
 
 .sb-sidebar__ns-title {

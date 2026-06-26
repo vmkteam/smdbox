@@ -89,7 +89,8 @@ function Group({ title, children }: { title?: string; children: React.ReactNode 
 /** Searchable, keyboard-navigable list of methods with favorites & recents. */
 export function Sidebar({ services }: { services: Record<string, SmdService> }) {
   const [search, setSearch] = useState('');
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const collapsedNamespaces = useStore((s) => s.collapsedNamespaces);
+  const toggleNamespace = useStore((s) => s.toggleNamespace);
   const favorites = useStore((s) => s.prefs.favorites);
   const history = useStore((s) => s.history);
   const grouped = useMemo(() => groupServices(services), [services]);
@@ -118,14 +119,6 @@ export function Sidebar({ services }: { services: Record<string, SmdService> }) 
       ),
     [grouped.namespaces, otherKeys, needle],
   );
-
-  const toggleCollapse = (ns: string) =>
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(ns)) next.delete(ns);
-      else next.add(ns);
-      return next;
-    });
 
   // Arrow-key navigation: from the search box into the list and across methods.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -188,14 +181,14 @@ export function Sidebar({ services }: { services: Record<string, SmdService> }) 
         const filtered = filterMethods(methods, needle, ns);
         const keys = Object.keys(filtered);
         if (!keys.length) return null;
-        const isCollapsed = !searching && collapsed.has(ns);
+        const isCollapsed = !searching && collapsedNamespaces.includes(ns);
         return (
           <div className="sb-sidebar__namespace" key={ns}>
             <button
               type="button"
               className="h6 sb-sidebar__ns-title sb-sidebar__ns-toggle"
               aria-expanded={!isCollapsed}
-              onClick={() => toggleCollapse(ns)}
+              onClick={() => toggleNamespace(ns)}
             >
               <span className="sb-sidebar__caret">
                 {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}

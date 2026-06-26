@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Button,
@@ -18,8 +18,11 @@ import {
   Gear,
   HddStack,
   MoonStars,
+  Pencil,
+  QuestionCircle,
   SunFill,
-  X,
+  Trash,
+  Upload,
   XLg,
 } from 'react-bootstrap-icons';
 
@@ -42,11 +45,24 @@ function Workspace() {
   const activeEnvironmentId = useStore((s) => s.activeEnvironmentId);
   const saveEnvironment = useStore((s) => s.saveEnvironment);
   const applyEnvironment = useStore((s) => s.applyEnvironment);
+  const renameEnvironment = useStore((s) => s.renameEnvironment);
   const deleteEnvironment = useStore((s) => s.deleteEnvironment);
+  const importConfig = useStore((s) => s.importConfig);
+  const docsUrl = useStore((s) => s.docsUrl);
 
   const saveCurrentEnv = () => {
     const name = window.prompt('Environment name:');
     if (name) saveEnvironment(name);
+  };
+  const fileRef = useRef<HTMLInputElement>(null);
+  const loadConfigFile = async (file: File) => {
+    try {
+      const cfg = JSON.parse(await file.text()) as Parameters<typeof importConfig>[0];
+      if (!cfg.smdUrl) return;
+      importConfig(cfg);
+    } catch {
+      // ignore invalid config file
+    }
   };
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -90,16 +106,30 @@ function Workspace() {
                       className="d-flex justify-content-between align-items-center"
                     >
                       <span>{env.name}</span>
-                      <span
-                        role="button"
-                        aria-label={`Delete ${env.name}`}
-                        className="ms-3 text-danger"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteEnvironment(env.id);
-                        }}
-                      >
-                        <X />
+                      <span className="d-flex align-items-center gap-2 ms-3">
+                        <span
+                          role="button"
+                          aria-label={`Rename ${env.name}`}
+                          className="text-secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const name = window.prompt('Environment name:', env.name)?.trim();
+                            if (name) renameEnvironment(env.id, name);
+                          }}
+                        >
+                          <Pencil />
+                        </span>
+                        <span
+                          role="button"
+                          aria-label={`Delete ${env.name}`}
+                          className="text-danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEnvironment(env.id);
+                          }}
+                        >
+                          <Trash />
+                        </span>
                       </span>
                     </Dropdown.Item>
                   ))}
@@ -145,6 +175,43 @@ function Workspace() {
             {project.created && (
               <Button size="sm" variant="outline-light" onClick={() => setShowSettings(true)}>
                 <Gear className="me-1" /> Settings
+              </Button>
+            )}
+            {/* Import is for onboarding only; in the working mode use Settings. */}
+            {!project.created && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline-light"
+                  onClick={() => fileRef.current?.click()}
+                  title="Import config"
+                >
+                  <Upload className="me-1" /> Import
+                </Button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="application/json"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void loadConfigFile(f);
+                    e.target.value = '';
+                  }}
+                />
+              </>
+            )}
+            {docsUrl && (
+              <Button
+                size="sm"
+                variant="outline-light"
+                href={docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Knowledge base"
+                title="Knowledge base"
+              >
+                <QuestionCircle />
               </Button>
             )}
             <Button
