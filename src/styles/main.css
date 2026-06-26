@@ -374,6 +374,34 @@ code.sb-type {
   color: var(--sb-color-success);
 }
 
+/* Parameter table: single inlined tree, compact name+type+required cell. */
+.sb-params th:last-child,
+.sb-params td:last-child {
+  width: 40%;
+}
+
+/* Keep the required mark, name and type chip on one line per row. */
+.sb-params td:first-child {
+  white-space: nowrap;
+}
+
+/* Fixed slot so parameter names align whether or not a required mark is shown. */
+.sb-params__req {
+  display: inline-block;
+  width: 16px;
+}
+
+.sb-params__type {
+  margin-left: 8px;
+}
+
+.sb-params__enum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 /* JSON viewer */
 .sb-json-viewer__head {
   display: flex;

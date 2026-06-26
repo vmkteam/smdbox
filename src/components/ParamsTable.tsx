@@ -3,28 +3,66 @@ import { Table } from 'react-bootstrap';
 
 import { CodeChip } from '../design/components/CodeChip';
 import { RequiredMark } from '../design/components/RequiredMark';
-import { resolveType, type DescNode } from './paramTypes';
+import type { SmdDefinition } from '../types/smd';
+import { referencedTypeName, resolveType, type DescNode } from './paramTypes';
 
-function Rows({ properties, namespace }: { properties: Record<string, DescNode>; namespace?: string }) {
+interface RowsProps {
+  properties: Record<string, DescNode>;
+  definitions: Record<string, SmdDefinition>;
+  depth: number;
+  /** Definition names already expanded on this path (cycle guard). */
+  seen: ReadonlySet<string>;
+}
+
+/** Resolves the child rows for a node: inline properties or a referenced definition. */
+function childrenOf(
+  node: DescNode,
+  definitions: Record<string, SmdDefinition>,
+  seen: ReadonlySet<string>,
+): { rows?: Record<string, DescNode>; seen: ReadonlySet<string> } {
+  if (node.properties && Object.keys(node.properties).length) {
+    return { rows: node.properties, seen };
+  }
+  const ref = referencedTypeName(node);
+  const def = ref && !seen.has(ref) ? definitions[ref] : undefined;
+  if (def?.properties && Object.keys(def.properties).length) {
+    return { rows: def.properties as Record<string, DescNode>, seen: new Set(seen).add(ref) };
+  }
+  return { seen };
+}
+
+function Rows({ properties, definitions, depth, seen }: RowsProps) {
   return (
     <>
       {Object.entries(properties).map(([name, node]) => {
-        const path = namespace ? `${namespace}.${name}` : name;
+        const { rows, seen: childSeen } = childrenOf(node, definitions, seen);
+        const enums = node.enum?.filter((v) => v !== undefined && v !== null) ?? [];
         return (
-          <Fragment key={path}>
+          <Fragment key={`${depth}:${name}`}>
             <tr>
-              <td>
-                <CodeChip>{path}</CodeChip>
+              <td style={{ paddingLeft: depth * 18 + 8 }}>
+                <span className="sb-params__req">{node.optional ? null : <RequiredMark />}</span>
+                <CodeChip>{name}</CodeChip>
+                <span className="sb-params__type">
+                  <CodeChip variant="type">{resolveType(node)}</CodeChip>
+                </span>
               </td>
               <td>
                 {node.description ? node.description : <span className="sb-muted">—</span>}
+                {enums.length > 0 && (
+                  <div className="sb-params__enum">
+                    {enums.map((v, i) => (
+                      <CodeChip key={i} variant="type">
+                        {String(v)}
+                      </CodeChip>
+                    ))}
+                  </div>
+                )}
               </td>
-              <td>
-                <CodeChip variant="type">{resolveType(node)}</CodeChip>
-              </td>
-              <td>{node.optional ? '' : <RequiredMark />}</td>
             </tr>
-            {node.properties && <Rows properties={node.properties} namespace={path} />}
+            {rows && (
+              <Rows properties={rows} definitions={definitions} depth={depth + 1} seen={childSeen} />
+            )}
           </Fragment>
         );
       })}
@@ -32,20 +70,28 @@ function Rows({ properties, namespace }: { properties: Record<string, DescNode>;
   );
 }
 
-/** Recursive table of parameter/property descriptions. */
-export function ParamsTable({ properties }: { properties: Record<string, DescNode> }) {
+/**
+ * Single flat table of parameters/properties. Nested object types (inline
+ * properties or `$ref` definitions) are expanded inline as indented rows, so
+ * there are no separate "Definition of X" tables.
+ */
+export function ParamsTable({
+  properties,
+  definitions = {},
+}: {
+  properties: Record<string, DescNode>;
+  definitions?: Record<string, SmdDefinition>;
+}) {
   return (
-    <Table striped bordered hover size="sm">
+    <Table striped bordered hover size="sm" className="sb-params">
       <thead>
         <tr>
           <th>Parameter</th>
           <th>Description</th>
-          <th>Type</th>
-          <th>Required</th>
         </tr>
       </thead>
       <tbody>
-        <Rows properties={properties} />
+        <Rows properties={properties} definitions={definitions} depth={0} seen={new Set()} />
       </tbody>
     </Table>
   );
