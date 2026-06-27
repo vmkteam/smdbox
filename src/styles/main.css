@@ -144,13 +144,16 @@
   padding: 16px;
 }
 
-/* Underline tabs (Form/Raw, Tree/Raw, Input/Output/Error). */
-.sb-app .nav-tabs {
+/* Underline tabs (Form/Raw, Tree/Raw, Input/Output/Error, Saved). Modals are
+   portalled outside .sb-app, so style their tabs too. */
+.sb-app .nav-tabs,
+.modal .nav-tabs {
   gap: 4px;
   border-bottom: 1px solid var(--bs-border-color);
 }
 
-.sb-app .nav-tabs .nav-link {
+.sb-app .nav-tabs .nav-link,
+.modal .nav-tabs .nav-link {
   margin-bottom: -1px;
   padding: 6px 12px;
   border: 0;
@@ -160,12 +163,14 @@
   color: var(--bs-secondary-color);
 }
 
-.sb-app .nav-tabs .nav-link:hover {
+.sb-app .nav-tabs .nav-link:hover,
+.modal .nav-tabs .nav-link:hover {
   color: var(--bs-body-color);
   border-bottom-color: var(--bs-border-color);
 }
 
-.sb-app .nav-tabs .nav-link.active {
+.sb-app .nav-tabs .nav-link.active,
+.modal .nav-tabs .nav-link.active {
   font-weight: 600;
   color: var(--bs-body-color);
   background: transparent;
