@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button, Form, Modal, Tab, Tabs } from 'react-bootstrap';
 import {
   ArrowsAngleExpand,
+  ArrowsCollapse,
+  ArrowsExpand,
   BookmarkPlus,
   BoxArrowUpRight,
   Clipboard,
@@ -59,12 +61,15 @@ function stringify(json: unknown): string {
 interface TreeProps {
   data: unknown;
   light: boolean;
+  /** Force-expand everything (e.g. while filtering). */
   expandAll: boolean;
+  /** Levels expanded by default (Infinity = expand all, 0 = collapse all). */
+  expandLevel: number;
   /** Lowercased field -> URL-template rules (see lowerRuleKeys). */
   idLinkRules: Record<string, string>;
 }
 
-function Tree({ data, light, expandAll, idLinkRules }: TreeProps) {
+function Tree({ data, light, expandAll, expandLevel, idLinkRules }: TreeProps) {
   if (data === undefined) return <div className="sb-muted">No matches</div>;
   return (
     <JSONTree
@@ -72,7 +77,7 @@ function Tree({ data, light, expandAll, idLinkRules }: TreeProps) {
       theme={TREE_THEME}
       invertTheme={light}
       hideRoot
-      shouldExpandNodeInitially={(_keyPath, _data, level) => expandAll || level < 2}
+      shouldExpandNodeInitially={(_keyPath, _data, level) => expandAll || level < expandLevel}
       // Turn ids into open/copy links when the field matches a configured rule (F1).
       valueRenderer={(display, value, ...keyPath) => {
         const url = idLinkUrl(keyPath as (string | number)[], value, idLinkRules);
@@ -117,6 +122,19 @@ export function JsonViewer({ json, title = 'Response', error = false, onSave }: 
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [wrap, setWrap] = useState(false);
+  // Expand-all / collapse-all: bump treeKey to remount the tree with a new
+  // default depth; re-runs keep the key (and thus the user's expand state).
+  const [expandMode, setExpandMode] = useState<'all' | 'none' | null>(null);
+  const [treeKey, setTreeKey] = useState(0);
+  const expandLevel = expandMode === 'all' ? Infinity : expandMode === 'none' ? 0 : 2;
+  const expandAllNodes = () => {
+    setExpandMode('all');
+    setTreeKey((k) => k + 1);
+  };
+  const collapseAllNodes = () => {
+    setExpandMode('none');
+    setTreeKey((k) => k + 1);
+  };
   // E2: local edits to the raw response (for tweaking before reuse as a mock).
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
@@ -165,15 +183,23 @@ export function JsonViewer({ json, title = 'Response', error = false, onSave }: 
     </>
   );
 
-  const search = (
-    <Form.Control
-      size="sm"
-      className="mb-2"
-      placeholder="Filter response…"
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-      aria-label="Filter response"
-    />
+  // Filter input + expand-all/collapse-all, shown above the tree (inline and modal).
+  const treeControls = (
+    <div className="sb-json-viewer__treebar">
+      <Form.Control
+        size="sm"
+        placeholder="Filter response…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        aria-label="Filter response"
+      />
+      <Button size="sm" variant="outline-secondary" onClick={expandAllNodes} aria-label="Expand all" title="Expand all">
+        <ArrowsExpand />
+      </Button>
+      <Button size="sm" variant="outline-secondary" onClick={collapseAllNodes} aria-label="Collapse all" title="Collapse all">
+        <ArrowsCollapse />
+      </Button>
+    </div>
   );
 
   return (
@@ -196,9 +222,16 @@ export function JsonViewer({ json, title = 'Response', error = false, onSave }: 
 
       <Tabs defaultActiveKey="tree" id={`json-viewer-${title}`} className="mb-2">
         <Tab eventKey="tree" title="Tree">
-          {search}
+          {treeControls}
           <div className="sb-json-viewer__tree">
-            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} idLinkRules={idLinkRules} />
+            <Tree
+              key={treeKey}
+              data={treeData}
+              light={light}
+              expandAll={Boolean(query.trim())}
+              expandLevel={expandLevel}
+              idLinkRules={idLinkRules}
+            />
           </div>
         </Tab>
         <Tab eventKey="raw" title="Raw">
@@ -240,9 +273,16 @@ export function JsonViewer({ json, title = 'Response', error = false, onSave }: 
           <span className="sb-json-viewer__actions ms-auto me-2">{actionButtons}</span>
         </Modal.Header>
         <Modal.Body>
-          {search}
+          {treeControls}
           <div className="sb-json-viewer__tree sb-json-viewer__tree--full">
-            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} idLinkRules={idLinkRules} />
+            <Tree
+              key={treeKey}
+              data={treeData}
+              light={light}
+              expandAll={Boolean(query.trim())}
+              expandLevel={expandLevel}
+              idLinkRules={idLinkRules}
+            />
           </div>
         </Modal.Body>
       </Modal>

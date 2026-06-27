@@ -511,6 +511,18 @@ button.sb-params__caret:hover {
   margin-bottom: 8px;
 }
 
+/* Filter + expand-all/collapse-all row above the JSON tree. */
+.sb-json-viewer__treebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sb-json-viewer__treebar > .form-control {
+  flex: 1;
+}
+
 /* JSON viewer */
 .sb-json-viewer__head {
   display: flex;

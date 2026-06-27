@@ -36,6 +36,9 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
   const { copied, copy } = useClipboard();
   const share = useClipboard();
   const [meta, setMeta] = useState<{ durationMs: number; size: number } | null>(null);
+  // Last shown response, kept across re-runs so the viewer stays mounted and its
+  // expand/collapse state survives (it resets only when the method changes).
+  const [lastResult, setLastResult] = useState<{ value: unknown; errored: boolean } | null>(null);
   const [curlOpen, setCurlOpen] = useState(false);
   const [curlText, setCurlText] = useState('');
   const [curlError, setCurlError] = useState(false);
@@ -60,6 +63,7 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
       {
         onSuccess: (resp) => {
           setMeta({ durationMs: performance.now() - startedAtRef.current, size: jsonByteSize(resp) });
+          setLastResult({ value: resp.error ?? resp.result, errored: Boolean(resp.error) });
           addHistory({
             id: crypto.randomUUID(),
             method,
@@ -123,12 +127,9 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
     }
   };
 
-  const result = mutation.data;
   const cancelled = isAbort(mutation.error);
-  // Unify success and JSON-RPC error into one result block (header + timing).
-  const errored = Boolean(result?.error);
-  const payload = errored ? result?.error : result?.result;
-  const showResult = !mutation.isPending && !cancelled && payload !== undefined;
+  // Show the last response (kept mounted across re-runs to preserve tree state).
+  const showResult = lastResult !== null && lastResult.value !== undefined;
 
   // Rendered inline to the right of each tab's "Try" button.
   const actions = (
@@ -216,15 +217,15 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
         </Alert>
       )}
 
-      {showResult && (
+      {showResult && lastResult && (
         <div className="sb-method-invoker__result">
           <JsonViewer
-            json={payload}
+            json={lastResult.value}
             title="Response"
-            error={errored}
+            error={lastResult.errored}
             onSave={() => {
               const name = window.prompt('Save response as:', method);
-              if (name) saveResponse(name, method, payload);
+              if (name) saveResponse(name, method, lastResult.value);
             }}
           />
           {meta && (

@@ -16,7 +16,7 @@ is typically embedded via [vmkteam/zenrpc](https://github.com/vmkteam/zenrpc).
 - **Docs** — one flat parameter table with nested types expanded inline (collapsible), a type badge and required mark per field, enum values, output type and error codes.
 - **Try it out** — an auto-generated form with type-based placeholders, or a raw JSON editor with syntax highlighting; paste a `curl` command to build the request; submit with Cmd/Ctrl+Enter.
 - **Calls** — live JSON-RPC requests with cancel and timeout; response timing and size.
-- **Response** — interactive collapsible tree and highlighted raw view, full-text filter, line wrap, fullscreen, copy, download, in-place edit (for mocks), and clickable links for id fields (configurable). Save responses for later.
+- **Response** — interactive tree (expand/collapse all, expansion kept across re-runs) and highlighted raw view, full-text filter, line wrap, fullscreen, copy, download, in-place edit (for mocks), and clickable links for id fields (configurable). Save responses for later.
 - **Errors** — full JSON-RPC error (code, message, data) shown in the same result panel.
 - **Reuse** — export a request as curl, share a deep link with parameters, save / reorder / rename requests, and re-run them from history.
 - **Environments** — save named configuration snapshots (endpoint / schema / headers) you can rename and switch between; the navbar recolors per environment (DEV/PROD presets or a custom color) so they are easy to tell apart.
