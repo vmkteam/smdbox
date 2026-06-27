@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Spinner, Tab, Tabs } from 'react-bootstrap';
-import { BookmarkPlus, Clipboard, ClipboardCheck, Share, XLg } from 'react-bootstrap-icons';
+import { Alert, Button, Form, Modal, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { BookmarkPlus, Clipboard, ClipboardCheck, ClipboardPlus, Share, XLg } from 'react-bootstrap-icons';
 
 import { useRpc } from '../data/queries';
 import { useClipboard } from '../hooks/useClipboard';
-import { toCurl } from '../lib/curl';
+import { fromCurl, toCurl } from '../lib/curl';
 import { formatBytes, formatDuration, jsonByteSize } from '../lib/format';
 import { createRequest, type JsonRpcParams, type JsonRpcRequest } from '../lib/rpc';
 import type { JsonSchema } from '../lib/smdToJsonSchema';
@@ -35,6 +35,9 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
   const { copied, copy } = useClipboard();
   const share = useClipboard();
   const [meta, setMeta] = useState<{ durationMs: number; size: number } | null>(null);
+  const [curlOpen, setCurlOpen] = useState(false);
+  const [curlText, setCurlText] = useState('');
+  const [curlError, setCurlError] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
   const startedAtRef = useRef(0);
 
@@ -106,6 +109,20 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
     if (name) saveRequest(name, method, formData);
   };
 
+  // Build the form from a pasted curl command (D2).
+  const importCurl = () => {
+    const parsed = fromCurl(curlText);
+    const params = parsed?.body && (parsed.body as { params?: JsonRpcParams }).params;
+    if (params && typeof params === 'object' && !Array.isArray(params)) {
+      setFormData(params as Record<string, unknown>);
+      setCurlOpen(false);
+      setCurlText('');
+      setCurlError(false);
+    } else {
+      setCurlError(true);
+    }
+  };
+
   const result = mutation.data;
   const cancelled = isAbort(mutation.error);
   // Unify success and JSON-RPC error into one result block (header + timing).
@@ -132,6 +149,19 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
       <Button type="button" variant="outline-secondary" onClick={onSave} title="Save this request">
         <BookmarkPlus className="me-1" />
         Save
+      </Button>
+      <Button
+        type="button"
+        variant="outline-secondary"
+        onClick={() => {
+          setCurlText('');
+          setCurlError(false);
+          setCurlOpen(true);
+        }}
+        title="Build the request from a curl command"
+      >
+        <ClipboardPlus className="me-1" />
+        From curl
       </Button>
     </>
   );
@@ -192,6 +222,36 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
           )}
         </div>
       )}
+
+      <Modal show={curlOpen} onHide={() => setCurlOpen(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title className="h6">Import from curl</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Control
+            as="textarea"
+            rows={6}
+            value={curlText}
+            onChange={(e) => setCurlText(e.target.value)}
+            placeholder="Paste a curl command…"
+            aria-label="curl command"
+            autoFocus
+          />
+          {curlError && (
+            <Alert variant="danger" className="mt-2 py-1">
+              Could not read JSON-RPC params from this curl command.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setCurlOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="success" onClick={importCurl} disabled={!curlText.trim()}>
+            Import
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

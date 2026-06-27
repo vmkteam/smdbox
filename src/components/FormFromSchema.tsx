@@ -1,9 +1,15 @@
-import { useRef, type KeyboardEvent } from 'react';
+import { useRef, type ChangeEvent, type FocusEvent, type KeyboardEvent } from 'react';
 import Form from '@rjsf/react-bootstrap';
-import { getTemplate, getUiOptions } from '@rjsf/utils';
-import type { ArrayFieldTemplateProps, IconButtonProps, RJSFSchema } from '@rjsf/utils';
+import { SchemaExamples } from '@rjsf/core';
+import { ariaDescribedByIds, examplesId, getInputProps, getTemplate, getUiOptions } from '@rjsf/utils';
+import type {
+  ArrayFieldTemplateProps,
+  BaseInputTemplateProps,
+  IconButtonProps,
+  RJSFSchema,
+} from '@rjsf/utils';
 import { customizeValidator } from '@rjsf/validator-ajv8';
-import { Button } from 'react-bootstrap';
+import { Button, Form as BsForm } from 'react-bootstrap';
 import { ArrowDown, ArrowUp, PlusLg, Trash } from 'react-bootstrap-icons';
 
 import type { JsonSchema } from '../lib/smdToJsonSchema';
@@ -45,6 +51,77 @@ const buttonTemplates = {
   MoveUpButton: iconButton(ArrowUp, 'Move up', 'outline-secondary'),
   MoveDownButton: iconButton(ArrowDown, 'Move down', 'outline-secondary'),
 };
+
+/** A hint placeholder derived from a field's JSON Schema type/format (D1). */
+function placeholderFor(schema: RJSFSchema): string {
+  const examples = schema.examples;
+  if (Array.isArray(examples) && examples.length) return `e.g. ${String(examples[0])}`;
+  if (schema.default !== undefined && schema.default !== null && typeof schema.default !== 'object') {
+    return `e.g. ${String(schema.default)}`;
+  }
+  switch (schema.format) {
+    case 'date-time':
+      return 'e.g. 2026-01-01T00:00:00Z';
+    case 'date':
+      return 'e.g. 2026-01-01';
+    case 'email':
+      return 'e.g. name@example.com';
+    case 'uri':
+    case 'url':
+      return 'e.g. https://example.com';
+    case 'uuid':
+      return 'e.g. 00000000-0000-0000-0000-000000000000';
+  }
+  const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
+  switch (type) {
+    case 'integer':
+    case 'number':
+      return 'e.g. 0';
+    case 'string':
+      return 'text';
+    default:
+      return '';
+  }
+}
+
+// Mirrors @rjsf/react-bootstrap's BaseInputTemplate, but fills empty inputs with
+// a type-based example placeholder so fields (incl. fresh "Add item" rows) hint
+// what they expect instead of sitting blank.
+function BaseInputTemplate(props: BaseInputTemplateProps) {
+  const {
+    id, htmlName, placeholder, required, readonly, disabled, type, value,
+    onChange, onChangeOverride, onBlur, onFocus, autofocus, options, schema,
+    rawErrors = [], children, extraProps,
+  } = props;
+  const inputProps = { ...extraProps, ...getInputProps(schema, type, options) };
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+    onChange(e.target.value === '' ? options.emptyValue : e.target.value);
+  const handleBlur = (e: FocusEvent<HTMLInputElement>) => onBlur(id, e.target.value);
+  const handleFocus = (e: FocusEvent<HTMLInputElement>) => onFocus(id, e.target.value);
+  return (
+    <>
+      <BsForm.Control
+        id={id}
+        name={htmlName || id}
+        placeholder={placeholder || placeholderFor(schema)}
+        autoFocus={autofocus}
+        required={required}
+        disabled={disabled}
+        readOnly={readonly}
+        className={rawErrors.length > 0 ? 'is-invalid' : ''}
+        list={schema.examples ? examplesId(id) : undefined}
+        {...inputProps}
+        value={value || value === 0 ? value : ''}
+        onChange={onChangeOverride || handleChange}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        aria-describedby={ariaDescribedByIds(id, !!schema.examples)}
+      />
+      {children}
+      <SchemaExamples id={id} schema={schema} />
+    </>
+  );
+}
 
 // The default rjsf-bootstrap array layout squeezes the Add button into a narrow
 // right column. Render items stacked with a normal-width Add button below.
@@ -103,7 +180,7 @@ export function FormFromSchema({ schema, formData, onChange, onSubmit, actions }
         schema={formSchema as RJSFSchema}
         formData={formData}
         validator={validator}
-        templates={{ ButtonTemplates: buttonTemplates, ArrayFieldTemplate }}
+        templates={{ ButtonTemplates: buttonTemplates, ArrayFieldTemplate, BaseInputTemplate }}
         onChange={(e) => onChange(e.formData as Record<string, unknown>)}
         onSubmit={(e) => onSubmit(e.formData as Record<string, unknown>)}
         onError={(errors) => console.error(errors)}
