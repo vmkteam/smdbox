@@ -150,45 +150,49 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
         <BookmarkPlus className="me-1" />
         Save
       </Button>
-      <Button
-        type="button"
-        variant="outline-secondary"
-        onClick={() => {
-          setCurlText('');
-          setCurlError(false);
-          setCurlOpen(true);
-        }}
-        title="Build the request from a curl command"
-      >
-        <ClipboardPlus className="me-1" />
-        From curl
-      </Button>
     </>
   );
 
+  const openCurl = () => {
+    setCurlText('');
+    setCurlError(false);
+    setCurlOpen(true);
+  };
+
   return (
     <div className="sb-method-invoker">
-      <Tabs defaultActiveKey="form" id="method-invoker-tabs" className="mb-2" mountOnEnter unmountOnExit>
-        <Tab eventKey="form" title="Form">
-          <FormFromSchema
-            schema={schema}
-            formData={formData}
-            onChange={setFormData}
-            onSubmit={onFormSubmit}
-            actions={actions}
-          />
-        </Tab>
-        <Tab eventKey="raw" title="Raw">
-          <RawJsonEditor
-            schema={schema}
-            method={method}
-            formData={formData}
-            onChange={setFormData}
-            onSubmit={onRawSubmit}
-            actions={actions}
-          />
-        </Tab>
-      </Tabs>
+      <div className="sb-method-invoker__tabs">
+        <Tabs defaultActiveKey="form" id="method-invoker-tabs" className="mb-2" mountOnEnter unmountOnExit>
+          <Tab eventKey="form" title="Form">
+            <FormFromSchema
+              schema={schema}
+              formData={formData}
+              onChange={setFormData}
+              onSubmit={onFormSubmit}
+              actions={actions}
+            />
+          </Tab>
+          <Tab eventKey="raw" title="Raw">
+            <RawJsonEditor
+              schema={schema}
+              method={method}
+              formData={formData}
+              onChange={setFormData}
+              onSubmit={onRawSubmit}
+              actions={actions}
+            />
+          </Tab>
+        </Tabs>
+        <Button
+          size="sm"
+          variant="outline-secondary"
+          className="sb-method-invoker__from-curl"
+          onClick={openCurl}
+          title="Build the request from a curl command"
+        >
+          <ClipboardPlus className="me-1" /> From curl
+        </Button>
+      </div>
 
       {mutation.isPending && (
         <div className="sb-method-invoker__loading" aria-busy="true">

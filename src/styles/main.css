@@ -554,13 +554,20 @@ code.sb-type {
   margin-top: 16px;
 }
 
-/* Equal-width action buttons; Try sits left, the rest are pushed right. */
+/* Equal-width action buttons, left-aligned so they wrap into a tidy cluster. */
 .sb-actions > .btn {
   min-width: 104px;
 }
 
-.sb-actions > .btn:first-child {
-  margin-right: auto;
+/* "From curl" lives by the Form/Raw tabs (it loads a request, not exports one). */
+.sb-method-invoker__tabs {
+  position: relative;
+}
+
+.sb-method-invoker__from-curl {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .sb-method-invoker__loading {
