@@ -758,6 +758,34 @@ button.sb-params__caret:hover {
   font-weight: 500;
 }
 
+.sb-saved__row {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.sb-saved__row:last-child {
+  border-bottom: 0;
+}
+
+.sb-saved__actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Collapsible request-params / response previews under a saved item. */
+.sb-saved__preview {
+  margin: 0 0 8px 26px;
+  padding: 8px;
+  max-height: 200px;
+  overflow: auto;
+  font-size: 12px;
+  background: var(--bs-tertiary-bg);
+  border-radius: 4px;
+}
+
+.sb-saved__preview-json {
+  margin: 0 0 8px 26px;
+}
+
 @media (max-width: 767px) {
   .sb-app__column {
     max-height: none;

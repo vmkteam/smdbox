@@ -4,7 +4,7 @@ import { ArrowClockwise, Download, PlusLg, Trash } from 'react-bootstrap-icons';
 
 import { refreshSmd, useSmd } from '../data/queries';
 import { defaultSmdUrlFromLocation, deriveEndpoint } from '../lib/smd';
-import { useStore } from '../store/store';
+import { useStore, type Preset } from '../store/store';
 
 interface HeaderRow {
   key: string;
@@ -41,6 +41,7 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const updateSettings = useStore((s) => s.updateSettings);
   const favorites = useStore((s) => s.prefs.favorites);
   const saved = useStore((s) => s.saved);
+  const savedResponses = useStore((s) => s.savedResponses);
   const environments = useStore((s) => s.environments);
   const navbarColor = useStore((s) => s.prefs.navbarColor);
   const setNavbarColor = useStore((s) => s.setNavbarColor);
@@ -48,6 +49,7 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const idLinks = useStore((s) => s.idLinks);
   const setIdLink = useStore((s) => s.setIdLink);
   const removeIdLink = useStore((s) => s.removeIdLink);
+  const presets = useStore((s) => s.presets);
 
   const [smdUrl, setSmdUrl] = useState(
     () => project.smdUrl || defaultSmdUrlFromLocation(window.location.href),
@@ -86,6 +88,14 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const removeHeader = (i: number) => setHeaders((h) => h.filter((_, idx) => idx !== i));
   const patchHeader = (i: number, patch: Partial<HeaderRow>) =>
     setHeaders((h) => h.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+
+  // Fill the form from a host-provided preset (A2); the user reviews, then Creates.
+  const applyPreset = (p: Preset) => {
+    setSmdUrl(p.smdUrl);
+    setDebouncedUrl(p.smdUrl);
+    setEndpoint(p.endpoint ?? '');
+    setHeaders(p.headers ? Object.entries(p.headers).map(([key, value]) => ({ key, value })) : []);
+  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,6 +141,7 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
         headers: headersObj,
         favorites,
         saved,
+        savedResponses,
         environments,
         idLinks,
         navbarColor,
@@ -230,6 +241,25 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
             >
               <PlusLg />
             </Button>
+          </div>
+        </div>
+      )}
+
+      {mode !== 'settings' && presets.length > 0 && (
+        <div className="mb-3">
+          <h5>Presets</h5>
+          <div className="sb-project__swatches">
+            {presets.map((p) => (
+              <Button
+                key={p.name}
+                type="button"
+                size="sm"
+                variant="outline-secondary"
+                onClick={() => applyPreset(p)}
+              >
+                {p.name}
+              </Button>
+            ))}
           </div>
         </div>
       )}

@@ -30,6 +30,7 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
   const prefill = useStore((s) => s.prefill);
   const clearPrefill = useStore((s) => s.clearPrefill);
   const saveRequest = useStore((s) => s.saveRequest);
+  const saveResponse = useStore((s) => s.saveResponse);
   const mutation = useRpc(endpoint, headers);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const { copied, copy } = useClipboard();
@@ -218,7 +219,15 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
 
       {showResult && (
         <div className="sb-method-invoker__result">
-          <JsonViewer json={payload} title="Response" error={errored} />
+          <JsonViewer
+            json={payload}
+            title="Response"
+            error={errored}
+            onSave={() => {
+              const name = window.prompt('Save response as:', method);
+              if (name) saveResponse(name, method, payload);
+            }}
+          />
           {meta && (
             <div className="sb-method-invoker__meta">
               {formatDuration(meta.durationMs)} · {formatBytes(meta.size)}

@@ -282,9 +282,9 @@ function Workspace() {
             </Modal.Body>
           </Modal>
 
-          <Modal show={showSaved} onHide={() => setShowSaved(false)}>
+          <Modal show={showSaved} onHide={() => setShowSaved(false)} size="lg">
             <Modal.Header closeButton>
-              <Modal.Title>Saved requests</Modal.Title>
+              <Modal.Title>Saved</Modal.Title>
             </Modal.Header>
             <Modal.Body>
               <Saved onClose={() => setShowSaved(false)} />

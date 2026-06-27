@@ -5,7 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { App } from './app/App';
 import { queryClient } from './data/queries';
 import { readState } from './lib/persist';
-import { startPersistence, useStore, type PersistedState } from './store/store';
+import { startPersistence, useStore, type PersistedState, type Preset } from './store/store';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './design/tokens.css';
@@ -28,6 +28,8 @@ export interface SmdboxOptions {
   docsUrl?: string;
   /** Field name -> URL template (with `{id}`) to turn ids in responses into links. */
   idLinks?: Record<string, string>;
+  /** Ready-made connections offered as one-click presets on the setup screen. */
+  presets?: Preset[];
 }
 
 const DEFAULT_SELECTOR = '#smdbox-root';
@@ -51,12 +53,14 @@ async function init(options: SmdboxOptions = {}): Promise<void> {
     headers: Record<string, string>;
     docsUrl: string;
     idLinks: Record<string, string>;
+    presets: Preset[];
   }> = {};
   if (options.smdUrl) pre.smdUrl = options.smdUrl;
   if (options.endpoint) pre.endpoint = options.endpoint;
   if (options.headers && Object.keys(options.headers).length) pre.headers = options.headers;
   if (options.docsUrl) pre.docsUrl = options.docsUrl;
   if (options.idLinks && Object.keys(options.idLinks).length) pre.idLinks = options.idLinks;
+  if (options.presets && options.presets.length) pre.presets = options.presets;
   if (Object.keys(pre).length) useStore.getState().preconfigure(pre);
 
   startPersistence();

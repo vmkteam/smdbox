@@ -32,6 +32,14 @@ export interface SavedRequest {
   ts: number;
 }
 
+export interface SavedResponse {
+  id: string;
+  name: string;
+  method: string;
+  response: unknown;
+  ts: number;
+}
+
 /** A named project configuration (endpoint + schema + headers). */
 export interface Environment {
   id: string;
@@ -39,6 +47,14 @@ export interface Environment {
   endpoint: string | null;
   smdUrl: string | null;
   headers: Record<string, string>;
+}
+
+/** A host-provided ready-made connection offered on the setup screen. */
+export interface Preset {
+  name: string;
+  smdUrl: string;
+  endpoint?: string;
+  headers?: Record<string, string>;
 }
 
 export type Theme = 'light' | 'dark';
@@ -57,6 +73,7 @@ export interface PersistedState {
   history: HistoryItem[];
   prefs: Prefs;
   saved: SavedRequest[];
+  savedResponses: SavedResponse[];
   environments: Environment[];
   /** Id of the environment currently applied (null when config is manual). */
   activeEnvironmentId: string | null;
@@ -71,11 +88,14 @@ export interface AppState extends PersistedState {
   prefill: { method: string; params: JsonRpcParams } | null;
   /** Knowledge-base link; empty unless set via window.smdbox({ docsUrl }). Not persisted. */
   docsUrl: string;
+  /** Host-provided setup presets; empty unless set via window.smdbox({ presets }). Not persisted. */
+  presets: Preset[];
   /** Apply preconfigured values from window.smdbox(options); options win. */
   preconfigure(
     partial: Partial<Pick<ProjectConfig, 'endpoint' | 'smdUrl' | 'headers'>> & {
       docsUrl?: string;
       idLinks?: Record<string, string>;
+      presets?: Preset[];
     },
   ): void;
   createProject(cfg: { endpoint: string; smdUrl: string; headers: Record<string, string> }): void;
@@ -91,6 +111,12 @@ export interface AppState extends PersistedState {
   clearPrefill(): void;
   saveRequest(name: string, method: string, params: JsonRpcParams): void;
   deleteSaved(id: string): void;
+  renameSaved(id: string, name: string): void;
+  /** Move a saved request up (-1) or down (+1) in the list. */
+  moveSaved(id: string, dir: -1 | 1): void;
+  saveResponse(name: string, method: string, response: unknown): void;
+  deleteSavedResponse(id: string): void;
+  renameSavedResponse(id: string, name: string): void;
   /**
    * Import a config bundle: connection + favorites + saved + environments +
    * id links + appearance (theme/navbar color), all merged into current state.
@@ -101,6 +127,7 @@ export interface AppState extends PersistedState {
     headers?: Record<string, string>;
     favorites?: string[];
     saved?: SavedRequest[];
+    savedResponses?: SavedResponse[];
     environments?: Environment[];
     idLinks?: Record<string, string>;
     navbarColor?: string;
@@ -134,18 +161,21 @@ export const useStore = create<AppState>((set) => ({
   history: [],
   prefs: initialPrefs,
   saved: [],
+  savedResponses: [],
   environments: [],
   activeEnvironmentId: null,
   collapsedNamespaces: [],
   idLinks: {},
   prefill: null,
   docsUrl: '',
+  presets: [],
 
-  preconfigure: ({ docsUrl, idLinks, ...rest }) =>
+  preconfigure: ({ docsUrl, idLinks, presets, ...rest }) =>
     set((s) => ({
       project: { ...s.project, ...rest },
       docsUrl: docsUrl ?? s.docsUrl,
       idLinks: idLinks ? { ...s.idLinks, ...idLinks } : s.idLinks,
+      presets: presets ?? s.presets,
     })),
 
   createProject: ({ endpoint, smdUrl, headers }) =>
@@ -186,6 +216,38 @@ export const useStore = create<AppState>((set) => ({
 
   deleteSaved: (id) => set((s) => ({ saved: s.saved.filter((r) => r.id !== id) })),
 
+  renameSaved: (id, name) =>
+    set((s) => ({ saved: s.saved.map((r) => (r.id === id ? { ...r, name } : r)) })),
+
+  moveSaved: (id, dir) =>
+    set((s) => {
+      const i = s.saved.findIndex((r) => r.id === id);
+      const j = i + dir;
+      const a = s.saved[i];
+      const b = s.saved[j];
+      if (!a || !b) return {};
+      const next = [...s.saved];
+      next[i] = b;
+      next[j] = a;
+      return { saved: next };
+    }),
+
+  saveResponse: (name, method, response) =>
+    set((s) => ({
+      savedResponses: [
+        ...s.savedResponses,
+        { id: crypto.randomUUID(), name, method, response, ts: Date.now() },
+      ],
+    })),
+
+  deleteSavedResponse: (id) =>
+    set((s) => ({ savedResponses: s.savedResponses.filter((r) => r.id !== id) })),
+
+  renameSavedResponse: (id, name) =>
+    set((s) => ({
+      savedResponses: s.savedResponses.map((r) => (r.id === id ? { ...r, name } : r)),
+    })),
+
   importConfig: (cfg) =>
     set((s) => {
       const mergeById = <T extends { id: string }>(cur: T[], inc?: T[]): T[] => {
@@ -210,6 +272,7 @@ export const useStore = create<AppState>((set) => ({
           theme: cfg.theme ?? s.prefs.theme,
         },
         saved: mergeById(s.saved, cfg.saved),
+        savedResponses: mergeById(s.savedResponses, cfg.savedResponses),
         environments: mergeById(s.environments, cfg.environments),
         idLinks: cfg.idLinks ? { ...s.idLinks, ...cfg.idLinks } : s.idLinks,
       };
@@ -299,6 +362,7 @@ export const useStore = create<AppState>((set) => ({
       history: state.history ?? s.history,
       prefs: { ...s.prefs, ...(state.prefs ?? {}) },
       saved: state.saved ?? s.saved,
+      savedResponses: state.savedResponses ?? s.savedResponses,
       environments: state.environments ?? s.environments,
       activeEnvironmentId: state.activeEnvironmentId ?? s.activeEnvironmentId,
       collapsedNamespaces: state.collapsedNamespaces ?? s.collapsedNamespaces,
@@ -325,6 +389,7 @@ export function startPersistence(): void {
         history,
         prefs,
         saved,
+        savedResponses,
         environments,
         activeEnvironmentId,
         collapsedNamespaces,
@@ -336,6 +401,7 @@ export function startPersistence(): void {
         history,
         prefs,
         saved,
+        savedResponses,
         environments,
         activeEnvironmentId,
         collapsedNamespaces,

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button, Form, Modal, Tab, Tabs } from 'react-bootstrap';
 import {
   ArrowsAngleExpand,
+  BookmarkPlus,
   BoxArrowUpRight,
   Clipboard,
   ClipboardCheck,
@@ -22,6 +23,8 @@ interface JsonViewerProps {
   title?: string;
   /** Tints the title to flag an error payload. */
   error?: boolean;
+  /** When set, renders a "Save" action (e.g. to store the response). */
+  onSave?: () => void;
 }
 
 // Monokai-ish base16 theme; base00 is transparent so the container bg shows
@@ -105,7 +108,7 @@ function Tree({ data, light, expandAll, idLinks }: TreeProps) {
 }
 
 /** Interactive JSON viewer: searchable tree, highlighted raw, and a fullscreen modal. */
-export function JsonViewer({ json, title = 'Response', error = false }: JsonViewerProps) {
+export function JsonViewer({ json, title = 'Response', error = false, onSave }: JsonViewerProps) {
   const { copied, copy } = useClipboard();
   const light = useStore((s) => s.prefs.theme === 'light');
   const idLinks = useStore((s) => s.idLinks);
@@ -136,9 +139,14 @@ export function JsonViewer({ json, title = 'Response', error = false }: JsonView
     URL.revokeObjectURL(url);
   };
 
-  // Copy + Download, reused inline and in the expand modal (right-aligned).
+  // Copy + Download (+ optional Save), reused inline and in the expand modal.
   const actionButtons = (
     <>
+      {onSave && (
+        <Button size="sm" variant="outline-secondary" onClick={onSave} title="Save this response">
+          <BookmarkPlus className="me-1" /> Save
+        </Button>
+      )}
       <Button size="sm" variant="outline-secondary" onClick={() => copy(shown)}>
         {copied ? <ClipboardCheck className="me-1" /> : <Clipboard className="me-1" />}
         {copied ? 'Copied' : 'Copy'}
