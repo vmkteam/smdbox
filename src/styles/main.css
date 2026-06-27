@@ -49,6 +49,16 @@
   background: var(--sb-navbar-line);
 }
 
+/* Narrow screens: collapse the toolbar to icon-only buttons (G4). */
+@media (max-width: 991.98px) {
+  .sb-app__nav .sb-nav-label {
+    display: none;
+  }
+  .sb-app__nav .me-1 {
+    margin-right: 0;
+  }
+}
+
 /* Popups always keep a comfortable minimum height. */
 .modal-body {
   min-height: 180px;
@@ -134,13 +144,16 @@
   padding: 16px;
 }
 
-/* Underline tabs (Form/Raw, Tree/Raw, Input/Output/Error). */
-.sb-app .nav-tabs {
+/* Underline tabs (Form/Raw, Tree/Raw, Input/Output/Error, Saved). Modals are
+   portalled outside .sb-app, so style their tabs too. */
+.sb-app .nav-tabs,
+.modal .nav-tabs {
   gap: 4px;
   border-bottom: 1px solid var(--bs-border-color);
 }
 
-.sb-app .nav-tabs .nav-link {
+.sb-app .nav-tabs .nav-link,
+.modal .nav-tabs .nav-link {
   margin-bottom: -1px;
   padding: 6px 12px;
   border: 0;
@@ -150,12 +163,14 @@
   color: var(--bs-secondary-color);
 }
 
-.sb-app .nav-tabs .nav-link:hover {
+.sb-app .nav-tabs .nav-link:hover,
+.modal .nav-tabs .nav-link:hover {
   color: var(--bs-body-color);
   border-bottom-color: var(--bs-border-color);
 }
 
-.sb-app .nav-tabs .nav-link.active {
+.sb-app .nav-tabs .nav-link.active,
+.modal .nav-tabs .nav-link.active {
   font-weight: 600;
   color: var(--bs-body-color);
   background: transparent;
@@ -163,8 +178,14 @@
 }
 
 /* Sidebar */
+/* Keep the search box pinned while the methods list scrolls under it (G1). */
 .sb-sidebar__search {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   margin-bottom: 12px;
+  padding: 4px 0 8px;
+  background: var(--bs-body-bg);
 }
 
 .sb-sidebar__ns-title {
@@ -309,6 +330,28 @@
   padding-bottom: 12px;
 }
 
+/* Navbar-color presets + custom picker (G6). */
+.sb-project__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sb-project__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.sb-project__color {
+  width: 44px;
+  padding: 2px;
+}
+
 /* Method viewer */
 .sb-method-viewer__title {
   display: flex;
@@ -366,6 +409,118 @@ code.sb-type {
 
 .sb-required {
   color: var(--sb-color-success);
+}
+
+/* Parameter table: single inlined tree, compact name+type+required cell. */
+.sb-params th:last-child,
+.sb-params td:last-child {
+  width: 40%;
+}
+
+/* Keep the required mark, name and type chip on one line per row. */
+.sb-params td:first-child {
+  white-space: nowrap;
+}
+
+/* Collapse/expand toggle (or an equal-width spacer for leaf rows). */
+.sb-params__caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  vertical-align: -2px;
+}
+
+button.sb-params__caret {
+  cursor: pointer;
+}
+
+button.sb-params__caret:hover {
+  color: var(--bs-body-color);
+}
+
+/* Fixed slot so parameter names align whether or not a required mark is shown. */
+.sb-params__req {
+  display: inline-block;
+  width: 16px;
+}
+
+.sb-params__type {
+  margin-left: 8px;
+}
+
+.sb-params__enum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Linked-field rules editor (Settings). */
+.sb-project__hint-text {
+  font-size: 13px;
+  margin: 4px 0 8px;
+}
+
+.sb-project__link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sb-project__link-row > .sb-muted {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+}
+
+/* Inline id links inside the JSON tree (F1). */
+.sb-json-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sb-json-link__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sb-color-primary);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.sb-json-link__btn:hover {
+  color: var(--sb-color-primary-hover);
+}
+
+/* Raw tab toolbar: wrap switch + edit toggle. */
+.sb-json-viewer__rawbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Filter + expand-all/collapse-all row above the JSON tree. */
+.sb-json-viewer__treebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sb-json-viewer__treebar > .form-control {
+  flex: 1;
 }
 
 /* JSON viewer */
@@ -512,6 +667,12 @@ code.sb-type {
   margin-top: 4px;
 }
 
+/* The Try-it-out pane is a query container so its actions can shrink to icons
+   when the pane itself is narrow (independent of the viewport width). */
+.sb-method-invoker {
+  container-type: inline-size;
+}
+
 .sb-actions {
   display: flex;
   align-items: center;
@@ -529,11 +690,39 @@ code.sb-type {
   margin-right: auto;
 }
 
+/* Narrow pane: drop button labels (keep icons + tooltips) so the row fits. */
+@container (max-width: 460px) {
+  .sb-method-invoker .sb-action-label {
+    display: none;
+  }
+  .sb-method-invoker .sb-actions > .btn {
+    min-width: 0;
+  }
+  .sb-method-invoker .sb-actions .me-1,
+  .sb-method-invoker__from-curl .me-1 {
+    margin-right: 0;
+  }
+}
+
+/* "From curl" lives by the Form/Raw tabs (it loads a request, not exports one). */
+.sb-method-invoker__tabs {
+  position: relative;
+}
+
+.sb-method-invoker__from-curl {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* Match the result block's separator so Calling -> Response doesn't jump. */
 .sb-method-invoker__loading {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bs-border-color);
 }
 
 .sb-history__method {
@@ -584,6 +773,34 @@ code.sb-type {
 
 .sb-saved__name {
   font-weight: 500;
+}
+
+.sb-saved__row {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.sb-saved__row:last-child {
+  border-bottom: 0;
+}
+
+.sb-saved__actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Collapsible request-params / response previews under a saved item. */
+.sb-saved__preview {
+  margin: 0 0 8px 26px;
+  padding: 8px;
+  max-height: 200px;
+  overflow: auto;
+  font-size: 12px;
+  background: var(--bs-tertiary-bg);
+  border-radius: 4px;
+}
+
+.sb-saved__preview-json {
+  margin: 0 0 8px 26px;
 }
 
 @media (max-width: 767px) {

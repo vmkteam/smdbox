@@ -30,16 +30,28 @@ export function MethodViewer({ services }: { services: Record<string, SmdService
     <div className="sb-method-viewer">
       <Row>
         {showInfo && (
-          <Col md={showTry ? 7 : 12}>
+          <Col xs={12} lg={showTry ? 7 : 12}>
             <h3 className="sb-method-viewer__title">
               {selected}
               {showTry ? (
-                <Button size="sm" variant="outline-secondary" onClick={() => setShowInfo(false)}>
-                  <EyeSlash className="me-1" /> Hide
+                <Button
+                  size="sm"
+                  variant="outline-secondary"
+                  onClick={() => setShowInfo(false)}
+                  title="Hide description"
+                  aria-label="Hide description"
+                >
+                  <EyeSlash />
                 </Button>
               ) : (
-                <Button size="sm" variant="outline-secondary" onClick={() => setShowTry(true)}>
-                  <Eye className="me-1" /> Try it
+                <Button
+                  size="sm"
+                  variant="outline-secondary"
+                  onClick={() => setShowTry(true)}
+                  title="Show Try it out"
+                  aria-label="Show Try it out"
+                >
+                  <Eye />
                 </Button>
               )}
             </h3>
@@ -48,16 +60,28 @@ export function MethodViewer({ services }: { services: Record<string, SmdService
         )}
 
         {showTry && (
-          <Col md={showInfo ? 5 : 12}>
+          <Col xs={12} lg={showInfo ? 5 : 12}>
             <h3 className="sb-method-viewer__title">
               Try it out
               {showInfo ? (
-                <Button size="sm" variant="outline-secondary" onClick={() => setShowTry(false)}>
-                  <EyeSlash className="me-1" /> Hide
+                <Button
+                  size="sm"
+                  variant="outline-secondary"
+                  onClick={() => setShowTry(false)}
+                  title="Hide Try it out"
+                  aria-label="Hide Try it out"
+                >
+                  <EyeSlash />
                 </Button>
               ) : (
-                <Button size="sm" variant="outline-secondary" onClick={() => setShowInfo(true)}>
-                  <Eye className="me-1" /> Show description
+                <Button
+                  size="sm"
+                  variant="outline-secondary"
+                  onClick={() => setShowInfo(true)}
+                  title="Show description"
+                  aria-label="Show description"
+                >
+                  <Eye />
                 </Button>
               )}
             </h3>

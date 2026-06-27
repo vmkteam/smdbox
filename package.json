@@ -1,6 +1,6 @@
 {
   "name": "smdbox",
-  "version": "2.0.0-dev",
+  "version": "2.1.0",
   "description": "UI for human-readable JSON-RPC SMD schemas: browse methods and call them live.",
   "repository": "https://github.com/vmkteam/smdbox",
   "license": "MIT",

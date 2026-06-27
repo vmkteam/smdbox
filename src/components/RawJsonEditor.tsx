@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Alert, Button } from 'react-bootstrap';
 
+import { fromCurl, rpcParams } from '../lib/curl';
 import { getParamsTemplate, type JsonSchema } from '../lib/smdToJsonSchema';
 import type { JsonRpcParams } from '../lib/rpc';
 import { CodeEditor } from './CodeEditor';
@@ -54,6 +55,17 @@ export function RawJsonEditor({ schema, method, formData, onChange, onSubmit, ac
   };
 
   const handleChange = (next: string) => {
+    // Pasting a curl command auto-expands into its JSON-RPC request (D2).
+    if (/^\s*curl\b/.test(next)) {
+      const parsed = fromCurl(next);
+      if (parsed?.body !== undefined) {
+        setValue(JSON.stringify(parsed.body, null, 2));
+        setValid(true);
+        const params = rpcParams(parsed.body);
+        if (params) onChange(params);
+        return;
+      }
+    }
     setValue(next);
     tryParse(next);
   };

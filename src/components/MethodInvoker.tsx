@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Spinner, Tab, Tabs } from 'react-bootstrap';
-import { BookmarkPlus, Clipboard, ClipboardCheck, Share, XLg } from 'react-bootstrap-icons';
+import { Alert, Button, Form, Modal, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { BookmarkPlus, Clipboard, ClipboardCheck, ClipboardPlus, Share, XLg } from 'react-bootstrap-icons';
 
 import { useRpc } from '../data/queries';
 import { useClipboard } from '../hooks/useClipboard';
-import { toCurl } from '../lib/curl';
+import { fromCurl, rpcParams, toCurl } from '../lib/curl';
 import { formatBytes, formatDuration, jsonByteSize } from '../lib/format';
 import { createRequest, type JsonRpcParams, type JsonRpcRequest } from '../lib/rpc';
 import type { JsonSchema } from '../lib/smdToJsonSchema';
@@ -30,11 +30,18 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
   const prefill = useStore((s) => s.prefill);
   const clearPrefill = useStore((s) => s.clearPrefill);
   const saveRequest = useStore((s) => s.saveRequest);
+  const saveResponse = useStore((s) => s.saveResponse);
   const mutation = useRpc(endpoint, headers);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const { copied, copy } = useClipboard();
   const share = useClipboard();
   const [meta, setMeta] = useState<{ durationMs: number; size: number } | null>(null);
+  // Last shown response, kept across re-runs so the viewer stays mounted and its
+  // expand/collapse state survives (it resets only when the method changes).
+  const [lastResult, setLastResult] = useState<{ value: unknown; errored: boolean } | null>(null);
+  const [curlOpen, setCurlOpen] = useState(false);
+  const [curlText, setCurlText] = useState('');
+  const [curlError, setCurlError] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
   const startedAtRef = useRef(0);
 
@@ -56,6 +63,7 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
       {
         onSuccess: (resp) => {
           setMeta({ durationMs: performance.now() - startedAtRef.current, size: jsonByteSize(resp) });
+          setLastResult({ value: resp.error ?? resp.result, errored: Boolean(resp.error) });
           addHistory({
             id: crypto.randomUUID(),
             method,
@@ -106,19 +114,29 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
     if (name) saveRequest(name, method, formData);
   };
 
-  const result = mutation.data;
+  // Build the form from a pasted curl command (D2).
+  const importCurl = () => {
+    const params = rpcParams(fromCurl(curlText)?.body);
+    if (params) {
+      setFormData(params);
+      setCurlOpen(false);
+      setCurlText('');
+      setCurlError(false);
+    } else {
+      setCurlError(true);
+    }
+  };
+
   const cancelled = isAbort(mutation.error);
-  // Unify success and JSON-RPC error into one result block (header + timing).
-  const errored = Boolean(result?.error);
-  const payload = errored ? result?.error : result?.result;
-  const showResult = !mutation.isPending && !cancelled && payload !== undefined;
+  // Show the last response (kept mounted across re-runs to preserve tree state).
+  const showResult = lastResult !== null && lastResult.value !== undefined;
 
   // Rendered inline to the right of each tab's "Try" button.
   const actions = (
     <>
-      <Button type="button" variant="outline-secondary" onClick={copyCurl}>
+      <Button type="button" variant="outline-secondary" onClick={copyCurl} title="Copy as curl">
         {copied ? <ClipboardCheck className="me-1" /> : <Clipboard className="me-1" />}
-        {copied ? 'Copied' : 'curl'}
+        <span className="sb-action-label">{copied ? 'Copied' : 'curl'}</span>
       </Button>
       <Button
         type="button"
@@ -127,38 +145,55 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
         title="Copy a shareable link with these parameters"
       >
         <Share className="me-1" />
-        {share.copied ? 'Copied' : 'Share'}
+        <span className="sb-action-label">{share.copied ? 'Copied' : 'Share'}</span>
       </Button>
       <Button type="button" variant="outline-secondary" onClick={onSave} title="Save this request">
         <BookmarkPlus className="me-1" />
-        Save
+        <span className="sb-action-label">Save</span>
       </Button>
     </>
   );
 
+  const openCurl = () => {
+    setCurlText('');
+    setCurlError(false);
+    setCurlOpen(true);
+  };
+
   return (
     <div className="sb-method-invoker">
-      <Tabs defaultActiveKey="form" id="method-invoker-tabs" className="mb-2" mountOnEnter unmountOnExit>
-        <Tab eventKey="form" title="Form">
-          <FormFromSchema
-            schema={schema}
-            formData={formData}
-            onChange={setFormData}
-            onSubmit={onFormSubmit}
-            actions={actions}
-          />
-        </Tab>
-        <Tab eventKey="raw" title="Raw">
-          <RawJsonEditor
-            schema={schema}
-            method={method}
-            formData={formData}
-            onChange={setFormData}
-            onSubmit={onRawSubmit}
-            actions={actions}
-          />
-        </Tab>
-      </Tabs>
+      <div className="sb-method-invoker__tabs">
+        <Tabs defaultActiveKey="form" id="method-invoker-tabs" className="mb-2" mountOnEnter unmountOnExit>
+          <Tab eventKey="form" title="Form">
+            <FormFromSchema
+              schema={schema}
+              formData={formData}
+              onChange={setFormData}
+              onSubmit={onFormSubmit}
+              actions={actions}
+            />
+          </Tab>
+          <Tab eventKey="raw" title="Raw">
+            <RawJsonEditor
+              schema={schema}
+              method={method}
+              formData={formData}
+              onChange={setFormData}
+              onSubmit={onRawSubmit}
+              actions={actions}
+            />
+          </Tab>
+        </Tabs>
+        <Button
+          size="sm"
+          variant="outline-secondary"
+          className="sb-method-invoker__from-curl"
+          onClick={openCurl}
+          title="Build the request from a curl command"
+        >
+          <ClipboardPlus className="me-1" /> <span className="sb-action-label">From curl</span>
+        </Button>
+      </div>
 
       {mutation.isPending && (
         <div className="sb-method-invoker__loading" aria-busy="true">
@@ -182,9 +217,17 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
         </Alert>
       )}
 
-      {showResult && (
+      {showResult && lastResult && (
         <div className="sb-method-invoker__result">
-          <JsonViewer json={payload} title="Response" error={errored} />
+          <JsonViewer
+            json={lastResult.value}
+            title="Response"
+            error={lastResult.errored}
+            onSave={() => {
+              const name = window.prompt('Save response as:', method);
+              if (name) saveResponse(name, method, lastResult.value);
+            }}
+          />
           {meta && (
             <div className="sb-method-invoker__meta">
               {formatDuration(meta.durationMs)} · {formatBytes(meta.size)}
@@ -192,6 +235,36 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
           )}
         </div>
       )}
+
+      <Modal show={curlOpen} onHide={() => setCurlOpen(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title className="h6">Import from curl</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Control
+            as="textarea"
+            rows={6}
+            value={curlText}
+            onChange={(e) => setCurlText(e.target.value)}
+            placeholder="Paste a curl command…"
+            aria-label="curl command"
+            autoFocus
+          />
+          {curlError && (
+            <Alert variant="danger" className="mt-2 py-1">
+              Could not read JSON-RPC params from this curl command.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setCurlOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="success" onClick={importCurl} disabled={!curlText.trim()}>
+            Import
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

@@ -11,17 +11,17 @@ is typically embedded via [vmkteam/zenrpc](https://github.com/vmkteam/zenrpc).
 
 ## Features
 
-- **Schemas** — load SMD or OpenRPC by URL; the format is auto-detected. Add custom request headers.
-- **Browse** — searchable method sidebar with favorites, recent calls, collapsible namespaces and keyboard navigation.
-- **Docs** — per-method input parameters, output type and error codes, including nested type definitions.
-- **Try it out** — an auto-generated form (from the schema) or a raw JSON editor with syntax highlighting; submit with Cmd/Ctrl+Enter.
+- **Schemas** — load SMD or OpenRPC by URL; the format is auto-detected. Add custom request headers, pick a host-provided preset, or import a config to skip setup.
+- **Browse** — searchable method sidebar (sticky search) with favorites, recent calls, collapsible namespaces (persisted) and keyboard navigation.
+- **Docs** — one flat parameter table with nested types expanded inline (collapsible), a type badge and required mark per field, enum values, output type and error codes.
+- **Try it out** — an auto-generated form with type-based placeholders, or a raw JSON editor with syntax highlighting; paste a `curl` command to build the request; submit with Cmd/Ctrl+Enter.
 - **Calls** — live JSON-RPC requests with cancel and timeout; response timing and size.
-- **Response** — interactive collapsible tree and highlighted raw view, full-text filter, line wrap, fullscreen, copy and download.
+- **Response** — interactive tree (expand/collapse all, expansion kept across re-runs) and highlighted raw view, full-text filter, line wrap, fullscreen, copy, download, in-place edit (for mocks), and clickable links for id fields (configurable). Save responses for later.
 - **Errors** — full JSON-RPC error (code, message, data) shown in the same result panel.
-- **Reuse** — export a request as curl, share a deep link with parameters, save requests, and re-run them from history.
-- **Environments** — save named configuration snapshots (endpoint / schema / headers) and switch between them.
-- **Config** — import/export the whole setup (connection, favorites, saved requests, environments) as JSON.
-- **Comfort** — light/dark theme (Steel palette), state persisted to IndexedDB, reduced-motion friendly.
+- **Reuse** — export a request as curl, share a deep link with parameters, save / reorder / rename requests, and re-run them from history.
+- **Environments** — save named configuration snapshots (endpoint / schema / headers) you can rename and switch between; the navbar recolors per environment (DEV/PROD presets or a custom color) so they are easy to tell apart.
+- **Config** — import/export the whole setup (connection, favorites, saved requests & responses, environments, id-link rules, theme & colors) as JSON.
+- **Comfort** — light/dark theme (Steel palette), responsive layout (the toolbar collapses to icons on narrow screens), state persisted to IndexedDB, reduced-motion friendly, optional knowledge-base link.
 
 ## Integration
 
@@ -37,6 +37,13 @@ The integration contract is unchanged — load the bundle and initialize:
     smdUrl: '/rpc/?smd',          // SMD or OpenRPC schema url
     endpoint: '/rpc/',            // RPC endpoint (derived from the schema if omitted)
     headers: {},                  // headers added to every request
+    docsUrl: '',                  // optional knowledge-base link on the setup screen
+    idLinks: {                    // turn id values in responses into links ({id} placeholder)
+      productId: 'https://example.com/product/{id}',
+    },
+    presets: [                    // one-click connections offered on the setup screen
+      { name: 'Prod', smdUrl: 'https://api.example.com/rpc/?smd' },
+    ],
   });
 </script>
 ```
@@ -60,15 +67,16 @@ Requires Node ≥ 20.
 ```bash
 npm install
 npm run dev          # Vite dev server (see index.html)
-npm run build        # type-check + build single bundle into dist/
+npm run build        # type-check + build the single bundle into build/
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
 npm run test         # Vitest unit tests
 npm run test:e2e     # Playwright smoke test (records a video)
 ```
 
-> `npm run build` overwrites the committed legacy `dist/`. Restore it with
-> `git checkout -- dist` after building locally — the v2 bundle ships via Pages.
+> `npm run build` writes to `build/` (gitignored); the committed `dist/` is the
+> frozen legacy bundle and is never touched by the build. CI publishes Pages
+> from `build/`.
 
 ## Layout
 

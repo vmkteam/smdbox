@@ -4,7 +4,7 @@ import { CodeChip } from '../design/components/CodeChip';
 import { SectionTitle } from '../design/components/SectionTitle';
 import type { SmdDefinition, SmdJsonSchema, SmdService } from '../types/smd';
 import { ParamsTable } from './ParamsTable';
-import { resolveType, type DescNode } from './paramTypes';
+import { referencedTypeName, resolveType, type DescNode } from './paramTypes';
 
 /** Converts the parameters array into a name->node map for the table. */
 function paramsToProperties(params: SmdJsonSchema[]): Record<string, DescNode> {
@@ -15,20 +15,11 @@ function paramsToProperties(params: SmdJsonSchema[]): Record<string, DescNode> {
   return out;
 }
 
-function DefinitionTables({ definitions }: { definitions?: Record<string, SmdDefinition> }) {
-  if (!definitions) return null;
-  return (
-    <>
-      {Object.entries(definitions).map(([name, def]) => (
-        <div key={name}>
-          <SectionTitle level="subsection">
-            Definition of <CodeChip variant="type">{name}</CodeChip>
-          </SectionTitle>
-          <ParamsTable properties={(def.properties ?? {}) as Record<string, DescNode>} />
-        </div>
-      ))}
-    </>
-  );
+/** Collects definitions from every node into one map, for inline resolution. */
+function mergeDefinitions(nodes: SmdJsonSchema[]): Record<string, SmdDefinition> {
+  const out: Record<string, SmdDefinition> = {};
+  for (const node of nodes) Object.assign(out, node.definitions);
+  return out;
 }
 
 function InputTab({ service }: { service: SmdService }) {
@@ -39,10 +30,7 @@ function InputTab({ service }: { service: SmdService }) {
   return (
     <div>
       <SectionTitle>Parameters</SectionTitle>
-      <ParamsTable properties={properties} />
-      {service.parameters.map((param) => (
-        <DefinitionTables key={param.name ?? ''} definitions={param.definitions} />
-      ))}
+      <ParamsTable properties={properties} definitions={mergeDefinitions(service.parameters)} />
     </div>
   );
 }
@@ -51,10 +39,14 @@ function OutputTab({ returns }: { returns: SmdJsonSchema }) {
   if (!returns.type) {
     return <Alert variant="warning">No output specified in documentation</Alert>;
   }
-  const hasProps = returns.properties && Object.keys(returns.properties).length > 0;
   const typeLabel = resolveType(returns as DescNode);
   // Skip the description when it merely repeats the type name (common for $ref results).
   const desc = returns.description && returns.description !== typeLabel ? returns.description : '';
+  // Properties to expand: inline ones, or those of the referenced definition.
+  const ref = referencedTypeName(returns as DescNode);
+  const refProps = ref ? returns.definitions?.[ref]?.properties : undefined;
+  const props = (returns.properties ?? refProps) as Record<string, DescNode> | undefined;
+  const hasProps = props && Object.keys(props).length > 0;
   return (
     <div>
       <SectionTitle>Returns</SectionTitle>
@@ -77,10 +69,9 @@ function OutputTab({ returns }: { returns: SmdJsonSchema }) {
       {hasProps && (
         <div>
           <SectionTitle level="subsection">Properties of return object</SectionTitle>
-          <ParamsTable properties={returns.properties as Record<string, DescNode>} />
+          <ParamsTable properties={props} definitions={returns.definitions} />
         </div>
       )}
-      <DefinitionTables definitions={returns.definitions} />
     </div>
   );
 }

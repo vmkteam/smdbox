@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Button,
@@ -18,8 +18,11 @@ import {
   Gear,
   HddStack,
   MoonStars,
+  Pencil,
+  QuestionCircle,
   SunFill,
-  X,
+  Trash,
+  Upload,
   XLg,
 } from 'react-bootstrap-icons';
 
@@ -30,7 +33,7 @@ import { Project } from '../components/Project';
 import { Saved } from '../components/Saved';
 import { Sidebar } from '../components/Sidebar';
 import { refreshSmd, useSmd } from '../data/queries';
-import { useStore } from '../store/store';
+import { selectNavbarColor, useStore } from '../store/store';
 import { useMethodHash } from './useMethodHash';
 
 function Workspace() {
@@ -38,15 +41,30 @@ function Workspace() {
   const clearProject = useStore((s) => s.clearProject);
   const theme = useStore((s) => s.prefs.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
+  // Active env color wins, so switching envs recolors the navbar; else the global pref.
+  const navbarColor = useStore(selectNavbarColor);
   const environments = useStore((s) => s.environments);
   const activeEnvironmentId = useStore((s) => s.activeEnvironmentId);
   const saveEnvironment = useStore((s) => s.saveEnvironment);
   const applyEnvironment = useStore((s) => s.applyEnvironment);
+  const renameEnvironment = useStore((s) => s.renameEnvironment);
   const deleteEnvironment = useStore((s) => s.deleteEnvironment);
+  const importConfig = useStore((s) => s.importConfig);
+  const docsUrl = useStore((s) => s.docsUrl);
 
   const saveCurrentEnv = () => {
     const name = window.prompt('Environment name:');
     if (name) saveEnvironment(name);
+  };
+  const fileRef = useRef<HTMLInputElement>(null);
+  const loadConfigFile = async (file: File) => {
+    try {
+      const cfg = JSON.parse(await file.text()) as Parameters<typeof importConfig>[0];
+      if (!cfg.smdUrl) return;
+      importConfig(cfg);
+    } catch {
+      // ignore invalid config file
+    }
   };
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -56,6 +74,13 @@ function Workspace() {
   useEffect(() => {
     document.documentElement.setAttribute('data-bs-theme', theme);
   }, [theme]);
+
+  // Override the navbar color (DEV/PROD presets or a custom pick); '' restores the default.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (navbarColor) root.style.setProperty('--sb-navbar-bg', navbarColor);
+    else root.style.removeProperty('--sb-navbar-bg');
+  }, [navbarColor]);
 
   const smd = useSmd(project.created ? project.smdUrl : null, project.headers);
   const services = smd.data?.services;
@@ -72,9 +97,11 @@ function Workspace() {
             {/* Group 1 — connection */}
             {(project.created || environments.length > 0) && (
               <Dropdown align="end">
-                <Dropdown.Toggle size="sm" variant="outline-light">
+                <Dropdown.Toggle size="sm" variant="outline-light" title="Environments">
                   <HddStack className="me-1" />{' '}
-                  {environments.find((e) => e.id === activeEnvironmentId)?.name ?? 'Env'}
+                  <span className="sb-nav-label">
+                    {environments.find((e) => e.id === activeEnvironmentId)?.name ?? 'Env'}
+                  </span>
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                   {environments.length === 0 && (
@@ -90,16 +117,29 @@ function Workspace() {
                       className="d-flex justify-content-between align-items-center"
                     >
                       <span>{env.name}</span>
-                      <span
-                        role="button"
-                        aria-label={`Delete ${env.name}`}
-                        className="ms-3 text-danger"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteEnvironment(env.id);
-                        }}
-                      >
-                        <X />
+                      <span className="d-flex align-items-center gap-2 ms-3">
+                        <span
+                          role="button"
+                          aria-label={`Rename ${env.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const name = window.prompt('Environment name:', env.name)?.trim();
+                            if (name) renameEnvironment(env.id, name);
+                          }}
+                        >
+                          <Pencil />
+                        </span>
+                        <span
+                          role="button"
+                          aria-label={`Delete ${env.name}`}
+                          className="text-danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEnvironment(env.id);
+                          }}
+                        >
+                          <Trash />
+                        </span>
                       </span>
                     </Dropdown.Item>
                   ))}
@@ -113,8 +153,8 @@ function Workspace() {
               </Dropdown>
             )}
             {project.created && (
-              <Button size="sm" variant="outline-light" onClick={clearProject}>
-                <XLg className="me-1" /> Close
+              <Button size="sm" variant="outline-light" onClick={clearProject} title="Close project">
+                <XLg className="me-1" /> <span className="sb-nav-label">Close</span>
               </Button>
             )}
 
@@ -123,18 +163,19 @@ function Workspace() {
             {/* Group 2 — work */}
             {project.created && (
               <ButtonGroup size="sm">
-                <Button variant="outline-light" onClick={() => setShowHistory(true)}>
-                  <ClockHistory className="me-1" /> History
+                <Button variant="outline-light" onClick={() => setShowHistory(true)} title="History">
+                  <ClockHistory className="me-1" /> <span className="sb-nav-label">History</span>
                 </Button>
-                <Button variant="outline-light" onClick={() => setShowSaved(true)}>
-                  <Bookmarks className="me-1" /> Saved
+                <Button variant="outline-light" onClick={() => setShowSaved(true)} title="Saved requests">
+                  <Bookmarks className="me-1" /> <span className="sb-nav-label">Saved</span>
                 </Button>
                 <Button
                   variant="outline-light"
                   onClick={() => refreshSmd(project.smdUrl)}
                   disabled={smd.isFetching}
+                  title="Refresh schema"
                 >
-                  <ArrowClockwise className="me-1" /> Refresh
+                  <ArrowClockwise className="me-1" /> <span className="sb-nav-label">Refresh</span>
                 </Button>
               </ButtonGroup>
             )}
@@ -143,8 +184,45 @@ function Workspace() {
 
             {/* Group 3 — settings */}
             {project.created && (
-              <Button size="sm" variant="outline-light" onClick={() => setShowSettings(true)}>
-                <Gear className="me-1" /> Settings
+              <Button size="sm" variant="outline-light" onClick={() => setShowSettings(true)} title="Project settings">
+                <Gear className="me-1" /> <span className="sb-nav-label">Settings</span>
+              </Button>
+            )}
+            {/* Import is for onboarding only; in the working mode use Settings. */}
+            {!project.created && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline-light"
+                  onClick={() => fileRef.current?.click()}
+                  title="Import config"
+                >
+                  <Upload className="me-1" /> <span className="sb-nav-label">Import</span>
+                </Button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="application/json"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void loadConfigFile(f);
+                    e.target.value = '';
+                  }}
+                />
+              </>
+            )}
+            {docsUrl && (
+              <Button
+                size="sm"
+                variant="outline-light"
+                href={docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Knowledge base"
+                title="Knowledge base"
+              >
+                <QuestionCircle />
               </Button>
             )}
             <Button
@@ -205,9 +283,9 @@ function Workspace() {
             </Modal.Body>
           </Modal>
 
-          <Modal show={showSaved} onHide={() => setShowSaved(false)}>
+          <Modal show={showSaved} onHide={() => setShowSaved(false)} size="lg">
             <Modal.Header closeButton>
-              <Modal.Title>Saved requests</Modal.Title>
+              <Modal.Title>Saved</Modal.Title>
             </Modal.Header>
             <Modal.Body>
               <Saved onClose={() => setShowSaved(false)} />
