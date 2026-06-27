@@ -30,7 +30,7 @@ export function MethodViewer({ services }: { services: Record<string, SmdService
     <div className="sb-method-viewer">
       <Row>
         {showInfo && (
-          <Col md={showTry ? 7 : 12}>
+          <Col xs={12} lg={showTry ? 7 : 12}>
             <h3 className="sb-method-viewer__title">
               {selected}
               {showTry ? (
@@ -60,7 +60,7 @@ export function MethodViewer({ services }: { services: Record<string, SmdService
         )}
 
         {showTry && (
-          <Col md={showInfo ? 5 : 12}>
+          <Col xs={12} lg={showInfo ? 5 : 12}>
             <h3 className="sb-method-viewer__title">
               Try it out
               {showInfo ? (

@@ -86,7 +86,7 @@ export function ParamsTable({
   definitions?: Record<string, SmdDefinition>;
 }) {
   return (
-    <Table striped bordered hover size="sm" className="sb-params">
+    <Table striped bordered hover size="sm" responsive className="sb-params">
       <thead>
         <tr>
           <th>Parameter</th>

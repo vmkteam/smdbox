@@ -49,6 +49,16 @@
   background: var(--sb-navbar-line);
 }
 
+/* Narrow screens: collapse the toolbar to icon-only buttons (G4). */
+@media (max-width: 991.98px) {
+  .sb-app__nav .sb-nav-label {
+    display: none;
+  }
+  .sb-app__nav .me-1 {
+    margin-right: 0;
+  }
+}
+
 /* Popups always keep a comfortable minimum height. */
 .modal-body {
   min-height: 180px;

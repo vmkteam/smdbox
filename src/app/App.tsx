@@ -88,9 +88,11 @@ function Workspace() {
             {/* Group 1 — connection */}
             {(project.created || environments.length > 0) && (
               <Dropdown align="end">
-                <Dropdown.Toggle size="sm" variant="outline-light">
+                <Dropdown.Toggle size="sm" variant="outline-light" title="Environments">
                   <HddStack className="me-1" />{' '}
-                  {environments.find((e) => e.id === activeEnvironmentId)?.name ?? 'Env'}
+                  <span className="sb-nav-label">
+                    {environments.find((e) => e.id === activeEnvironmentId)?.name ?? 'Env'}
+                  </span>
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                   {environments.length === 0 && (
@@ -142,8 +144,8 @@ function Workspace() {
               </Dropdown>
             )}
             {project.created && (
-              <Button size="sm" variant="outline-light" onClick={clearProject}>
-                <XLg className="me-1" /> Close
+              <Button size="sm" variant="outline-light" onClick={clearProject} title="Close project">
+                <XLg className="me-1" /> <span className="sb-nav-label">Close</span>
               </Button>
             )}
 
@@ -152,18 +154,19 @@ function Workspace() {
             {/* Group 2 — work */}
             {project.created && (
               <ButtonGroup size="sm">
-                <Button variant="outline-light" onClick={() => setShowHistory(true)}>
-                  <ClockHistory className="me-1" /> History
+                <Button variant="outline-light" onClick={() => setShowHistory(true)} title="History">
+                  <ClockHistory className="me-1" /> <span className="sb-nav-label">History</span>
                 </Button>
-                <Button variant="outline-light" onClick={() => setShowSaved(true)}>
-                  <Bookmarks className="me-1" /> Saved
+                <Button variant="outline-light" onClick={() => setShowSaved(true)} title="Saved requests">
+                  <Bookmarks className="me-1" /> <span className="sb-nav-label">Saved</span>
                 </Button>
                 <Button
                   variant="outline-light"
                   onClick={() => refreshSmd(project.smdUrl)}
                   disabled={smd.isFetching}
+                  title="Refresh schema"
                 >
-                  <ArrowClockwise className="me-1" /> Refresh
+                  <ArrowClockwise className="me-1" /> <span className="sb-nav-label">Refresh</span>
                 </Button>
               </ButtonGroup>
             )}
@@ -172,8 +175,8 @@ function Workspace() {
 
             {/* Group 3 — settings */}
             {project.created && (
-              <Button size="sm" variant="outline-light" onClick={() => setShowSettings(true)}>
-                <Gear className="me-1" /> Settings
+              <Button size="sm" variant="outline-light" onClick={() => setShowSettings(true)} title="Project settings">
+                <Gear className="me-1" /> <span className="sb-nav-label">Settings</span>
               </Button>
             )}
             {/* Import is for onboarding only; in the working mode use Settings. */}
@@ -185,7 +188,7 @@ function Workspace() {
                   onClick={() => fileRef.current?.click()}
                   title="Import config"
                 >
-                  <Upload className="me-1" /> Import
+                  <Upload className="me-1" /> <span className="sb-nav-label">Import</span>
                 </Button>
                 <input
                   ref={fileRef}
