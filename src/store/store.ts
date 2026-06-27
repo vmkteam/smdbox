@@ -46,6 +46,8 @@ export type Theme = 'light' | 'dark';
 export interface Prefs {
   theme: Theme;
   favorites: string[];
+  /** Navbar color override (hex); '' uses the default ocean. */
+  navbarColor: string;
 }
 
 /** Slice of the store that is persisted to IndexedDB. */
@@ -77,6 +79,7 @@ export interface AppState extends PersistedState {
   selectMethod(name: string | null): void;
   addHistory(item: HistoryItem): void;
   toggleTheme(): void;
+  setNavbarColor(color: string): void;
   toggleFavorite(name: string): void;
   /** Select a method and seed its form with the given params. */
   prefillRequest(method: string, params: JsonRpcParams): void;
@@ -109,7 +112,7 @@ const initialProject: ProjectConfig = {
   created: false,
 };
 
-const initialPrefs: Prefs = { theme: 'light', favorites: [] };
+const initialPrefs: Prefs = { theme: 'light', favorites: [], navbarColor: '' };
 
 export const useStore = create<AppState>((set) => ({
   project: initialProject,
@@ -223,6 +226,8 @@ export const useStore = create<AppState>((set) => ({
 
   toggleTheme: () =>
     set((s) => ({ prefs: { ...s.prefs, theme: s.prefs.theme === 'dark' ? 'light' : 'dark' } })),
+
+  setNavbarColor: (color) => set((s) => ({ prefs: { ...s.prefs, navbarColor: color } })),
 
   toggleFavorite: (name) =>
     set((s) => ({

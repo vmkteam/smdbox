@@ -41,6 +41,7 @@ function Workspace() {
   const clearProject = useStore((s) => s.clearProject);
   const theme = useStore((s) => s.prefs.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
+  const navbarColor = useStore((s) => s.prefs.navbarColor);
   const environments = useStore((s) => s.environments);
   const activeEnvironmentId = useStore((s) => s.activeEnvironmentId);
   const saveEnvironment = useStore((s) => s.saveEnvironment);
@@ -72,6 +73,13 @@ function Workspace() {
   useEffect(() => {
     document.documentElement.setAttribute('data-bs-theme', theme);
   }, [theme]);
+
+  // Override the navbar color (DEV/PROD presets or a custom pick); '' restores the default.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (navbarColor) root.style.setProperty('--sb-navbar-bg', navbarColor);
+    else root.style.removeProperty('--sb-navbar-bg');
+  }, [navbarColor]);
 
   const smd = useSmd(project.created ? project.smdUrl : null, project.headers);
   const services = smd.data?.services;

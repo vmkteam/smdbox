@@ -26,6 +26,14 @@ interface ProjectProps {
 
 const DEBOUNCE_MS = 800;
 
+// Navbar presets to tell environments apart at a glance ('' = default ocean).
+const NAVBAR_PRESETS: { label: string; color: string }[] = [
+  { label: 'Default', color: '' },
+  { label: 'Dev', color: '#047857' },
+  { label: 'Stage', color: '#b45309' },
+  { label: 'Prod', color: '#be123c' },
+];
+
 /** Project setup (initial) and settings form. */
 export function Project({ mode = 'init', onClose }: ProjectProps) {
   const project = useStore((s) => s.project);
@@ -34,6 +42,8 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const favorites = useStore((s) => s.prefs.favorites);
   const saved = useStore((s) => s.saved);
   const environments = useStore((s) => s.environments);
+  const navbarColor = useStore((s) => s.prefs.navbarColor);
+  const setNavbarColor = useStore((s) => s.setNavbarColor);
 
   const [smdUrl, setSmdUrl] = useState(
     () => project.smdUrl || defaultSmdUrlFromLocation(window.location.href),
@@ -130,6 +140,32 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
             <Button type="button" size="sm" variant="outline-secondary" onClick={exportConfig}>
               <Download className="me-1" /> Export config
             </Button>
+          </div>
+
+          <h5 className="mt-3">Navbar color</h5>
+          <div className="sb-project__swatches">
+            {NAVBAR_PRESETS.map((p) => (
+              <Button
+                key={p.label}
+                type="button"
+                size="sm"
+                variant={navbarColor === p.color ? 'primary' : 'outline-secondary'}
+                onClick={() => setNavbarColor(p.color)}
+              >
+                {p.color && (
+                  <span className="sb-project__dot" style={{ background: p.color }} aria-hidden="true" />
+                )}
+                {p.label}
+              </Button>
+            ))}
+            <Form.Control
+              type="color"
+              value={navbarColor || '#075985'}
+              onChange={(e) => setNavbarColor(e.target.value)}
+              title="Custom navbar color"
+              aria-label="Custom navbar color"
+              className="sb-project__color"
+            />
           </div>
         </div>
       )}

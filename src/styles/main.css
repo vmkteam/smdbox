@@ -325,6 +325,28 @@
   padding-bottom: 12px;
 }
 
+/* Navbar-color presets + custom picker (G6). */
+.sb-project__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sb-project__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.sb-project__color {
+  width: 44px;
+  padding: 2px;
+}
+
 /* Method viewer */
 .sb-method-viewer__title {
   display: flex;
