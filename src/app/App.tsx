@@ -33,7 +33,7 @@ import { Project } from '../components/Project';
 import { Saved } from '../components/Saved';
 import { Sidebar } from '../components/Sidebar';
 import { refreshSmd, useSmd } from '../data/queries';
-import { useStore } from '../store/store';
+import { selectNavbarColor, useStore } from '../store/store';
 import { useMethodHash } from './useMethodHash';
 
 function Workspace() {
@@ -42,10 +42,7 @@ function Workspace() {
   const theme = useStore((s) => s.prefs.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
   // Active env color wins, so switching envs recolors the navbar; else the global pref.
-  const navbarColor = useStore((s) => {
-    const env = s.environments.find((e) => e.id === s.activeEnvironmentId);
-    return (env?.color || s.prefs.navbarColor) ?? '';
-  });
+  const navbarColor = useStore(selectNavbarColor);
   const environments = useStore((s) => s.environments);
   const activeEnvironmentId = useStore((s) => s.activeEnvironmentId);
   const saveEnvironment = useStore((s) => s.saveEnvironment);

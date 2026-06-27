@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 
-import { idLinkUrl } from '../idLinks';
+import { idLinkUrl, lowerRuleKeys } from '../idLinks';
 
-const rules = {
+// idLinkUrl matches against a lowercased rule map (built once by callers).
+const rules = lowerRuleKeys({
   showId: 'https://myshows.me/view/{id}/',
   movieId: 'https://myshows.me/movie/{id}/',
   newsId: 'https://myshows.me/news/{id}/',
   productId: 'https://example.com/product/{id}',
-};
+});
 
 describe('idLinkUrl', () => {
   it('matches the leaf key directly', () => {

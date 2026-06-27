@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Alert, Button } from 'react-bootstrap';
 
-import { fromCurl } from '../lib/curl';
+import { fromCurl, rpcParams } from '../lib/curl';
 import { getParamsTemplate, type JsonSchema } from '../lib/smdToJsonSchema';
 import type { JsonRpcParams } from '../lib/rpc';
 import { CodeEditor } from './CodeEditor';
@@ -59,13 +59,10 @@ export function RawJsonEditor({ schema, method, formData, onChange, onSubmit, ac
     if (/^\s*curl\b/.test(next)) {
       const parsed = fromCurl(next);
       if (parsed?.body !== undefined) {
-        const pretty = JSON.stringify(parsed.body, null, 2);
-        setValue(pretty);
+        setValue(JSON.stringify(parsed.body, null, 2));
         setValid(true);
-        const params = (parsed.body as { params?: JsonRpcParams }).params;
-        if (params && typeof params === 'object' && !Array.isArray(params)) {
-          onChange(params as Record<string, unknown>);
-        }
+        const params = rpcParams(parsed.body);
+        if (params) onChange(params);
         return;
       }
     }

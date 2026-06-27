@@ -23,6 +23,15 @@ export interface ParsedCurl {
   body?: unknown;
 }
 
+/** Extracts a JSON-RPC `params` object from a parsed request body, or null. */
+export function rpcParams(body: unknown): Record<string, unknown> | null {
+  const params = (body as { params?: unknown } | null | undefined)?.params;
+  if (params && typeof params === 'object' && !Array.isArray(params)) {
+    return params as Record<string, unknown>;
+  }
+  return null;
+}
+
 /** Splits a shell command into tokens, honoring quotes and line continuations. */
 function tokenize(input: string): string[] {
   const tokens: string[] = [];

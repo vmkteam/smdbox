@@ -1,10 +1,11 @@
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import { Table } from 'react-bootstrap';
-import { ChevronDown, ChevronRight } from 'react-bootstrap-icons';
 
 import { CodeChip } from '../design/components/CodeChip';
 import { RequiredMark } from '../design/components/RequiredMark';
+import { useSetToggle } from '../hooks/useSetToggle';
 import type { SmdDefinition } from '../types/smd';
+import { CollapseCaret } from './CollapseCaret';
 import { referencedTypeName, resolveType, type DescNode } from './paramTypes';
 
 interface RowsProps {
@@ -52,15 +53,7 @@ function Rows({ properties, definitions, depth, parentPath, seen, collapsed, onT
             <tr>
               <td style={{ paddingLeft: depth * 18 + 8 }}>
                 {rows ? (
-                  <button
-                    type="button"
-                    className="sb-params__caret"
-                    aria-expanded={!isCollapsed}
-                    aria-label={isCollapsed ? `Expand ${name}` : `Collapse ${name}`}
-                    onClick={() => onToggle(path)}
-                  >
-                    {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                  </button>
+                  <CollapseCaret open={!isCollapsed} onToggle={() => onToggle(path)} name={name} />
                 ) : (
                   <span className="sb-params__caret" aria-hidden="true" />
                 )}
@@ -114,14 +107,7 @@ export function ParamsTable({
   properties: Record<string, DescNode>;
   definitions?: Record<string, SmdDefinition>;
 }) {
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
-  const onToggle = (path: string) =>
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
+  const [collapsed, onToggle] = useSetToggle();
 
   return (
     <Table striped bordered hover size="sm" responsive className="sb-params">

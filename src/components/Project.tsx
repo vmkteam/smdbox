@@ -4,7 +4,7 @@ import { ArrowClockwise, Download, PlusLg, Trash } from 'react-bootstrap-icons';
 
 import { refreshSmd, useSmd } from '../data/queries';
 import { defaultSmdUrlFromLocation, deriveEndpoint } from '../lib/smd';
-import { useStore, type Preset } from '../store/store';
+import { selectNavbarColor, useStore, type ConfigBundle, type Preset } from '../store/store';
 
 interface HeaderRow {
   key: string;
@@ -68,7 +68,7 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
 
   // Navbar color binds to the active env (if any), else the global pref.
   const activeEnv = environments.find((e) => e.id === activeEnvironmentId);
-  const currentColor = activeEnv?.color || navbarColor;
+  const currentColor = useStore(selectNavbarColor);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedUrl(smdUrl), DEBOUNCE_MS);
@@ -139,22 +139,19 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const submitDisabled = mode === 'init' && (!smdUrl.trim() || pendingSubmit);
 
   const exportConfig = () => {
-    const data = JSON.stringify(
-      {
-        endpoint: effectiveEndpoint,
-        smdUrl: project.smdUrl,
-        headers: headersObj,
-        favorites,
-        saved,
-        savedResponses,
-        environments,
-        idLinks,
-        navbarColor,
-        theme,
-      },
-      null,
-      2,
-    );
+    const bundle: ConfigBundle = {
+      endpoint: effectiveEndpoint,
+      smdUrl: project.smdUrl,
+      headers: headersObj,
+      favorites,
+      saved,
+      savedResponses,
+      environments,
+      idLinks,
+      navbarColor,
+      theme,
+    };
+    const data = JSON.stringify(bundle, null, 2);
     const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
     const a = document.createElement('a');
     a.href = url;

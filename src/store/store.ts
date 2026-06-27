@@ -59,6 +59,20 @@ export interface Preset {
   headers?: Record<string, string>;
 }
 
+/** Sharable config bundle for export/import (one shape for both directions). */
+export interface ConfigBundle {
+  endpoint?: string | null;
+  smdUrl?: string | null;
+  headers?: Record<string, string>;
+  favorites?: string[];
+  saved?: SavedRequest[];
+  savedResponses?: SavedResponse[];
+  environments?: Environment[];
+  idLinks?: Record<string, string>;
+  navbarColor?: string;
+  theme?: Theme;
+}
+
 export type Theme = 'light' | 'dark';
 
 export interface Prefs {
@@ -123,18 +137,7 @@ export interface AppState extends PersistedState {
    * Import a config bundle: connection + favorites + saved + environments +
    * id links + appearance (theme/navbar color), all merged into current state.
    */
-  importConfig(cfg: {
-    endpoint?: string;
-    smdUrl?: string;
-    headers?: Record<string, string>;
-    favorites?: string[];
-    saved?: SavedRequest[];
-    savedResponses?: SavedResponse[];
-    environments?: Environment[];
-    idLinks?: Record<string, string>;
-    navbarColor?: string;
-    theme?: Theme;
-  }): void;
+  importConfig(cfg: ConfigBundle): void;
   /** Save the current project config as a named env (upsert by name) and select it. */
   saveEnvironment(name: string): void;
   applyEnvironment(id: string): void;
@@ -156,6 +159,21 @@ const initialProject: ProjectConfig = {
 };
 
 const initialPrefs: Prefs = { theme: 'light', favorites: [], navbarColor: '' };
+
+/** Returns environments with the active one patched in place (or unchanged). */
+function patchActiveEnv(
+  s: Pick<AppState, 'environments' | 'activeEnvironmentId'>,
+  patch: Partial<Environment>,
+): Environment[] {
+  if (!s.activeEnvironmentId) return s.environments;
+  return s.environments.map((e) => (e.id === s.activeEnvironmentId ? { ...e, ...patch } : e));
+}
+
+/** Effective navbar color: the active env's color, else the global pref. */
+export function selectNavbarColor(s: AppState): string {
+  const env = s.environments.find((e) => e.id === s.activeEnvironmentId);
+  return (env?.color || s.prefs.navbarColor) ?? '';
+}
 
 export const useStore = create<AppState>((set) => ({
   project: initialProject,
@@ -191,14 +209,7 @@ export const useStore = create<AppState>((set) => ({
       const project = { ...s.project, endpoint, headers };
       // Keep the active environment selected and in sync: editing settings
       // updates that env in place instead of silently detaching from it.
-      const environments = s.activeEnvironmentId
-        ? s.environments.map((e) =>
-            e.id === s.activeEnvironmentId
-              ? { ...e, endpoint, headers, smdUrl: project.smdUrl }
-              : e,
-          )
-        : s.environments;
-      return { project, environments };
+      return { project, environments: patchActiveEnv(s, { endpoint, headers, smdUrl: project.smdUrl }) };
     }),
 
   clearProject: () => set({ project: initialProject, selected: null, activeEnvironmentId: null }),
@@ -347,18 +358,13 @@ export const useStore = create<AppState>((set) => ({
     set((s) => ({ prefs: { ...s.prefs, theme: s.prefs.theme === 'dark' ? 'light' : 'dark' } })),
 
   setNavbarColor: (color) =>
-    set((s) => {
+    set((s) =>
       // While an environment is active, color binds to that env (so switching
       // envs changes the navbar); otherwise it sets the global fallback.
-      if (s.activeEnvironmentId) {
-        return {
-          environments: s.environments.map((e) =>
-            e.id === s.activeEnvironmentId ? { ...e, color } : e,
-          ),
-        };
-      }
-      return { prefs: { ...s.prefs, navbarColor: color } };
-    }),
+      s.activeEnvironmentId
+        ? { environments: patchActiveEnv(s, { color }) }
+        : { prefs: { ...s.prefs, navbarColor: color } },
+    ),
 
   toggleFavorite: (name) =>
     set((s) => ({

@@ -1,21 +1,10 @@
-import { useState } from 'react';
 import { Badge, Button, Tab, Tabs } from 'react-bootstrap';
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Pencil, Trash } from 'react-bootstrap-icons';
+import { ArrowDown, ArrowUp, Pencil, Trash } from 'react-bootstrap-icons';
 
+import { useSetToggle } from '../hooks/useSetToggle';
 import { useStore } from '../store/store';
+import { CollapseCaret } from './CollapseCaret';
 import { JsonViewer } from './JsonViewer';
-
-function useToggle() {
-  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
-  const toggle = (id: string) =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  return [open, toggle] as const;
-}
 
 /** Saved requests (load/reorder/rename) and saved responses (view/rename). */
 export function Saved({ onClose }: { onClose?: () => void }) {
@@ -28,8 +17,8 @@ export function Saved({ onClose }: { onClose?: () => void }) {
   const deleteSavedResponse = useStore((s) => s.deleteSavedResponse);
   const renameSavedResponse = useStore((s) => s.renameSavedResponse);
 
-  const [openReq, toggleReq] = useToggle();
-  const [openResp, toggleResp] = useToggle();
+  const [openReq, toggleReq] = useSetToggle();
+  const [openResp, toggleResp] = useSetToggle();
 
   const rename = (current: string, apply: (name: string) => void) => {
     const name = window.prompt('Rename:', current)?.trim();
@@ -48,15 +37,7 @@ export function Saved({ onClose }: { onClose?: () => void }) {
               return (
                 <li key={req.id} className="sb-saved__row">
                   <div className="sb-saved__item">
-                    <button
-                      type="button"
-                      className="sb-params__caret"
-                      aria-expanded={open}
-                      aria-label={open ? 'Collapse params' : 'Show params'}
-                      onClick={() => toggleReq(req.id)}
-                    >
-                      {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                    </button>
+                    <CollapseCaret open={open} onToggle={() => toggleReq(req.id)} name="params" />
                     <button
                       type="button"
                       className="sb-saved__load"
@@ -132,15 +113,7 @@ export function Saved({ onClose }: { onClose?: () => void }) {
               return (
                 <li key={resp.id} className="sb-saved__row">
                   <div className="sb-saved__item">
-                    <button
-                      type="button"
-                      className="sb-params__caret"
-                      aria-expanded={open}
-                      aria-label={open ? 'Hide response' : 'Show response'}
-                      onClick={() => toggleResp(resp.id)}
-                    >
-                      {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                    </button>
+                    <CollapseCaret open={open} onToggle={() => toggleResp(resp.id)} name="response" />
                     <button type="button" className="sb-saved__load" onClick={() => toggleResp(resp.id)}>
                       <span className="sb-saved__name">{resp.name}</span>
                       <Badge bg="secondary" className="ms-2">

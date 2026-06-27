@@ -12,7 +12,7 @@ import {
 import { JSONTree } from 'react-json-tree';
 
 import { useClipboard } from '../hooks/useClipboard';
-import { idLinkUrl } from '../lib/idLinks';
+import { idLinkUrl, lowerRuleKeys } from '../lib/idLinks';
 import { filterJson } from '../lib/jsonFilter';
 import { highlightJson } from '../lib/jsonHighlight';
 import { useStore } from '../store/store';
@@ -60,10 +60,11 @@ interface TreeProps {
   data: unknown;
   light: boolean;
   expandAll: boolean;
-  idLinks: Record<string, string>;
+  /** Lowercased field -> URL-template rules (see lowerRuleKeys). */
+  idLinkRules: Record<string, string>;
 }
 
-function Tree({ data, light, expandAll, idLinks }: TreeProps) {
+function Tree({ data, light, expandAll, idLinkRules }: TreeProps) {
   if (data === undefined) return <div className="sb-muted">No matches</div>;
   return (
     <JSONTree
@@ -74,7 +75,7 @@ function Tree({ data, light, expandAll, idLinks }: TreeProps) {
       shouldExpandNodeInitially={(_keyPath, _data, level) => expandAll || level < 2}
       // Turn ids into open/copy links when the field matches a configured rule (F1).
       valueRenderer={(display, value, ...keyPath) => {
-        const url = idLinkUrl(keyPath as (string | number)[], value, idLinks);
+        const url = idLinkUrl(keyPath as (string | number)[], value, idLinkRules);
         if (!url) return display as ReactNode;
         return (
           <span className="sb-json-link">
@@ -112,6 +113,7 @@ export function JsonViewer({ json, title = 'Response', error = false, onSave }: 
   const { copied, copy } = useClipboard();
   const light = useStore((s) => s.prefs.theme === 'light');
   const idLinks = useStore((s) => s.idLinks);
+  const idLinkRules = useMemo(() => lowerRuleKeys(idLinks), [idLinks]);
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [wrap, setWrap] = useState(false);
@@ -196,7 +198,7 @@ export function JsonViewer({ json, title = 'Response', error = false, onSave }: 
         <Tab eventKey="tree" title="Tree">
           {search}
           <div className="sb-json-viewer__tree">
-            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} idLinks={idLinks} />
+            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} idLinkRules={idLinkRules} />
           </div>
         </Tab>
         <Tab eventKey="raw" title="Raw">
@@ -240,7 +242,7 @@ export function JsonViewer({ json, title = 'Response', error = false, onSave }: 
         <Modal.Body>
           {search}
           <div className="sb-json-viewer__tree sb-json-viewer__tree--full">
-            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} idLinks={idLinks} />
+            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} idLinkRules={idLinkRules} />
           </div>
         </Modal.Body>
       </Modal>

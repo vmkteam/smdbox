@@ -4,7 +4,7 @@ import { BookmarkPlus, Clipboard, ClipboardCheck, ClipboardPlus, Share, XLg } fr
 
 import { useRpc } from '../data/queries';
 import { useClipboard } from '../hooks/useClipboard';
-import { fromCurl, toCurl } from '../lib/curl';
+import { fromCurl, rpcParams, toCurl } from '../lib/curl';
 import { formatBytes, formatDuration, jsonByteSize } from '../lib/format';
 import { createRequest, type JsonRpcParams, type JsonRpcRequest } from '../lib/rpc';
 import type { JsonSchema } from '../lib/smdToJsonSchema';
@@ -112,10 +112,9 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
 
   // Build the form from a pasted curl command (D2).
   const importCurl = () => {
-    const parsed = fromCurl(curlText);
-    const params = parsed?.body && (parsed.body as { params?: JsonRpcParams }).params;
-    if (params && typeof params === 'object' && !Array.isArray(params)) {
-      setFormData(params as Record<string, unknown>);
+    const params = rpcParams(fromCurl(curlText)?.body);
+    if (params) {
+      setFormData(params);
       setCurlOpen(false);
       setCurlText('');
       setCurlError(false);
