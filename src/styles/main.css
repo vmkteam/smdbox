@@ -434,6 +434,57 @@ code.sb-type {
   margin-top: 4px;
 }
 
+/* Linked-field rules editor (Settings). */
+.sb-project__hint-text {
+  font-size: 13px;
+  margin: 4px 0 8px;
+}
+
+.sb-project__link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sb-project__link-row > .sb-muted {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+}
+
+/* Inline id links inside the JSON tree (F1). */
+.sb-json-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sb-json-link__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sb-color-primary);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.sb-json-link__btn:hover {
+  color: var(--sb-color-primary-hover);
+}
+
+/* Raw tab toolbar: wrap switch + edit toggle. */
+.sb-json-viewer__rawbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 /* JSON viewer */
 .sb-json-viewer__head {
   display: flex;

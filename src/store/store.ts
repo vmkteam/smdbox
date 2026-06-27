@@ -62,6 +62,8 @@ export interface PersistedState {
   activeEnvironmentId: string | null;
   /** Sidebar namespaces the user has collapsed (default: all expanded). */
   collapsedNamespaces: string[];
+  /** Field name -> URL template (with {id}); turns ids in responses into links. */
+  idLinks: Record<string, string>;
 }
 
 export interface AppState extends PersistedState {
@@ -71,7 +73,10 @@ export interface AppState extends PersistedState {
   docsUrl: string;
   /** Apply preconfigured values from window.smdbox(options); options win. */
   preconfigure(
-    partial: Partial<Pick<ProjectConfig, 'endpoint' | 'smdUrl' | 'headers'>> & { docsUrl?: string },
+    partial: Partial<Pick<ProjectConfig, 'endpoint' | 'smdUrl' | 'headers'>> & {
+      docsUrl?: string;
+      idLinks?: Record<string, string>;
+    },
   ): void;
   createProject(cfg: { endpoint: string; smdUrl: string; headers: Record<string, string> }): void;
   updateSettings(cfg: { endpoint: string; headers: Record<string, string> }): void;
@@ -102,6 +107,9 @@ export interface AppState extends PersistedState {
   deleteEnvironment(id: string): void;
   /** Collapse/expand a sidebar namespace (persisted). */
   toggleNamespace(ns: string): void;
+  /** Add or update an id->URL link rule. */
+  setIdLink(field: string, urlTemplate: string): void;
+  removeIdLink(field: string): void;
   hydrate(state: Partial<PersistedState>): void;
 }
 
@@ -123,11 +131,16 @@ export const useStore = create<AppState>((set) => ({
   environments: [],
   activeEnvironmentId: null,
   collapsedNamespaces: [],
+  idLinks: {},
   prefill: null,
   docsUrl: '',
 
-  preconfigure: ({ docsUrl, ...rest }) =>
-    set((s) => ({ project: { ...s.project, ...rest }, docsUrl: docsUrl ?? s.docsUrl })),
+  preconfigure: ({ docsUrl, idLinks, ...rest }) =>
+    set((s) => ({
+      project: { ...s.project, ...rest },
+      docsUrl: docsUrl ?? s.docsUrl,
+      idLinks: idLinks ? { ...s.idLinks, ...idLinks } : s.idLinks,
+    })),
 
   createProject: ({ endpoint, smdUrl, headers }) =>
     set((s) => ({
@@ -224,6 +237,16 @@ export const useStore = create<AppState>((set) => ({
         : [...s.collapsedNamespaces, ns],
     })),
 
+  setIdLink: (field, urlTemplate) =>
+    set((s) => ({ idLinks: { ...s.idLinks, [field]: urlTemplate } })),
+
+  removeIdLink: (field) =>
+    set((s) => {
+      const next = { ...s.idLinks };
+      delete next[field];
+      return { idLinks: next };
+    }),
+
   toggleTheme: () =>
     set((s) => ({ prefs: { ...s.prefs, theme: s.prefs.theme === 'dark' ? 'light' : 'dark' } })),
 
@@ -249,6 +272,7 @@ export const useStore = create<AppState>((set) => ({
       environments: state.environments ?? s.environments,
       activeEnvironmentId: state.activeEnvironmentId ?? s.activeEnvironmentId,
       collapsedNamespaces: state.collapsedNamespaces ?? s.collapsedNamespaces,
+      idLinks: state.idLinks ?? s.idLinks,
     })),
 }));
 
@@ -274,6 +298,7 @@ export function startPersistence(): void {
         environments,
         activeEnvironmentId,
         collapsedNamespaces,
+        idLinks,
       } = useStore.getState();
       void writeState({
         project,
@@ -284,6 +309,7 @@ export function startPersistence(): void {
         environments,
         activeEnvironmentId,
         collapsedNamespaces,
+        idLinks,
       } satisfies PersistedState);
     }, PERSIST_DEBOUNCE_MS);
   });

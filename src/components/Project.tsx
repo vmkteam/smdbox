@@ -44,6 +44,9 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const environments = useStore((s) => s.environments);
   const navbarColor = useStore((s) => s.prefs.navbarColor);
   const setNavbarColor = useStore((s) => s.setNavbarColor);
+  const idLinks = useStore((s) => s.idLinks);
+  const setIdLink = useStore((s) => s.setIdLink);
+  const removeIdLink = useStore((s) => s.removeIdLink);
 
   const [smdUrl, setSmdUrl] = useState(
     () => project.smdUrl || defaultSmdUrlFromLocation(window.location.href),
@@ -56,6 +59,8 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   // Set when the user submits before the schema has finished loading: we kick
   // off the fetch immediately and enter as soon as it validates (A1).
   const [pendingSubmit, setPendingSubmit] = useState(false);
+  const [linkField, setLinkField] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedUrl(smdUrl), DEBOUNCE_MS);
@@ -166,6 +171,54 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
               aria-label="Custom navbar color"
               className="sb-project__color"
             />
+          </div>
+
+          <h5 className="mt-3">Linked fields</h5>
+          <p className="sb-muted sb-project__hint-text">
+            Turn id values in responses into links. Use <code>{'{id}'}</code> as the placeholder.
+          </p>
+          {Object.entries(idLinks).map(([field, url]) => (
+            <div className="sb-project__link-row" key={field}>
+              <code className="sb-param-name">{field}</code>
+              <span className="sb-muted text-truncate" title={url}>
+                {url}
+              </span>
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={() => removeIdLink(field)}
+                aria-label={`Remove ${field}`}
+                title="Remove rule"
+              >
+                <Trash />
+              </Button>
+            </div>
+          ))}
+          <div className="sb-project__header-row">
+            <Form.Control
+              placeholder="field (e.g. productId)"
+              value={linkField}
+              onChange={(e) => setLinkField(e.target.value)}
+            />
+            <Form.Control
+              placeholder="https://…/{id}"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+            />
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              disabled={!linkField.trim() || !linkUrl.trim()}
+              onClick={() => {
+                setIdLink(linkField.trim(), linkUrl.trim());
+                setLinkField('');
+                setLinkUrl('');
+              }}
+              aria-label="Add link rule"
+              title="Add rule"
+            >
+              <PlusLg />
+            </Button>
           </div>
         </div>
       )}

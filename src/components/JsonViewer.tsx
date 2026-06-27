@@ -1,12 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button, Form, Modal, Tab, Tabs } from 'react-bootstrap';
-import { ArrowsAngleExpand, Clipboard, ClipboardCheck, Download } from 'react-bootstrap-icons';
+import {
+  ArrowsAngleExpand,
+  BoxArrowUpRight,
+  Clipboard,
+  ClipboardCheck,
+  Download,
+  Pencil,
+} from 'react-bootstrap-icons';
 import { JSONTree } from 'react-json-tree';
 
 import { useClipboard } from '../hooks/useClipboard';
+import { idLinkUrl } from '../lib/idLinks';
 import { filterJson } from '../lib/jsonFilter';
 import { highlightJson } from '../lib/jsonHighlight';
 import { useStore } from '../store/store';
+import { CodeEditor } from './CodeEditor';
 
 interface JsonViewerProps {
   json: unknown;
@@ -44,7 +53,14 @@ function stringify(json: unknown): string {
   }
 }
 
-function Tree({ data, light, expandAll }: { data: unknown; light: boolean; expandAll: boolean }) {
+interface TreeProps {
+  data: unknown;
+  light: boolean;
+  expandAll: boolean;
+  idLinks: Record<string, string>;
+}
+
+function Tree({ data, light, expandAll, idLinks }: TreeProps) {
   if (data === undefined) return <div className="sb-muted">No matches</div>;
   return (
     <JSONTree
@@ -53,6 +69,37 @@ function Tree({ data, light, expandAll }: { data: unknown; light: boolean; expan
       invertTheme={light}
       hideRoot
       shouldExpandNodeInitially={(_keyPath, _data, level) => expandAll || level < 2}
+      // Turn ids into open/copy links when the field matches a configured rule (F1).
+      valueRenderer={(display, value, ...keyPath) => {
+        const url = idLinkUrl(keyPath as (string | number)[], value, idLinks);
+        if (!url) return display as ReactNode;
+        return (
+          <span className="sb-json-link">
+            <span>{display as ReactNode}</span>
+            <a
+              className="sb-json-link__btn"
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              title={`Open ${url}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <BoxArrowUpRight />
+            </a>
+            <button
+              type="button"
+              className="sb-json-link__btn"
+              title="Copy link"
+              onClick={(e) => {
+                e.stopPropagation();
+                void navigator.clipboard?.writeText(url);
+              }}
+            >
+              <Clipboard />
+            </button>
+          </span>
+        );
+      }}
     />
   );
 }
@@ -61,16 +108,27 @@ function Tree({ data, light, expandAll }: { data: unknown; light: boolean; expan
 export function JsonViewer({ json, title = 'Response', error = false }: JsonViewerProps) {
   const { copied, copy } = useClipboard();
   const light = useStore((s) => s.prefs.theme === 'light');
+  const idLinks = useStore((s) => s.idLinks);
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [wrap, setWrap] = useState(false);
+  // E2: local edits to the raw response (for tweaking before reuse as a mock).
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string | null>(null);
 
   const text = useMemo(() => stringify(json), [json]);
+  const shown = draft ?? text;
   const treeData = useMemo(() => filterJson(json, query), [json, query]);
-  const rawHtml = useMemo(() => highlightJson(text), [text]);
+  const rawHtml = useMemo(() => highlightJson(shown), [shown]);
+
+  // A new response discards any local edit.
+  useEffect(() => {
+    setDraft(null);
+    setEditing(false);
+  }, [text]);
 
   const download = () => {
-    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    const url = URL.createObjectURL(new Blob([shown], { type: 'application/json' }));
     const a = document.createElement('a');
     a.href = url;
     a.download = `${title.toLowerCase().replace(/\s+/g, '-') || 'response'}.json`;
@@ -81,7 +139,7 @@ export function JsonViewer({ json, title = 'Response', error = false }: JsonView
   // Copy + Download, reused inline and in the expand modal (right-aligned).
   const actionButtons = (
     <>
-      <Button size="sm" variant="outline-secondary" onClick={() => copy(text)}>
+      <Button size="sm" variant="outline-secondary" onClick={() => copy(shown)}>
         {copied ? <ClipboardCheck className="me-1" /> : <Clipboard className="me-1" />}
         {copied ? 'Copied' : 'Copy'}
       </Button>
@@ -130,22 +188,39 @@ export function JsonViewer({ json, title = 'Response', error = false }: JsonView
         <Tab eventKey="tree" title="Tree">
           {search}
           <div className="sb-json-viewer__tree">
-            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} />
+            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} idLinks={idLinks} />
           </div>
         </Tab>
         <Tab eventKey="raw" title="Raw">
-          <Form.Check
-            type="switch"
-            id={`wrap-${title}`}
-            label="Wrap lines"
-            checked={wrap}
-            onChange={(e) => setWrap(e.target.checked)}
-            className="mb-2"
-          />
-          <pre
-            className={`sb-json-code${wrap ? ' sb-json-code--wrap' : ''}`}
-            dangerouslySetInnerHTML={{ __html: rawHtml }}
-          />
+          <div className="sb-json-viewer__rawbar">
+            <Form.Check
+              type="switch"
+              id={`wrap-${title}`}
+              label="Wrap lines"
+              checked={wrap}
+              onChange={(e) => setWrap(e.target.checked)}
+              disabled={editing}
+            />
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              onClick={() => {
+                if (!editing && draft === null) setDraft(text);
+                setEditing((v) => !v);
+              }}
+              title="Edit the response (local only)"
+            >
+              <Pencil className="me-1" /> {editing ? 'Done' : 'Edit'}
+            </Button>
+          </div>
+          {editing ? (
+            <CodeEditor value={draft ?? text} onChange={setDraft} ariaLabel="Edit response JSON" />
+          ) : (
+            <pre
+              className={`sb-json-code${wrap ? ' sb-json-code--wrap' : ''}`}
+              dangerouslySetInnerHTML={{ __html: rawHtml }}
+            />
+          )}
         </Tab>
       </Tabs>
 
@@ -157,7 +232,7 @@ export function JsonViewer({ json, title = 'Response', error = false }: JsonView
         <Modal.Body>
           {search}
           <div className="sb-json-viewer__tree sb-json-viewer__tree--full">
-            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} />
+            <Tree data={treeData} light={light} expandAll={Boolean(query.trim())} idLinks={idLinks} />
           </div>
         </Modal.Body>
       </Modal>

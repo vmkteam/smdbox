@@ -26,6 +26,8 @@ export interface SmdboxOptions {
   selector?: string;
   /** Knowledge-base link shown on the setup screen (defaults to the smdbox repo). */
   docsUrl?: string;
+  /** Field name -> URL template (with `{id}`) to turn ids in responses into links. */
+  idLinks?: Record<string, string>;
 }
 
 const DEFAULT_SELECTOR = '#smdbox-root';
@@ -48,11 +50,13 @@ async function init(options: SmdboxOptions = {}): Promise<void> {
     endpoint: string;
     headers: Record<string, string>;
     docsUrl: string;
+    idLinks: Record<string, string>;
   }> = {};
   if (options.smdUrl) pre.smdUrl = options.smdUrl;
   if (options.endpoint) pre.endpoint = options.endpoint;
   if (options.headers && Object.keys(options.headers).length) pre.headers = options.headers;
   if (options.docsUrl) pre.docsUrl = options.docsUrl;
+  if (options.idLinks && Object.keys(options.idLinks).length) pre.idLinks = options.idLinks;
   if (Object.keys(pre).length) useStore.getState().preconfigure(pre);
 
   startPersistence();
