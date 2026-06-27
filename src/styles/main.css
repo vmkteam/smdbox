@@ -417,6 +417,27 @@ code.sb-type {
   white-space: nowrap;
 }
 
+/* Collapse/expand toggle (or an equal-width spacer for leaf rows). */
+.sb-params__caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  vertical-align: -2px;
+}
+
+button.sb-params__caret {
+  cursor: pointer;
+}
+
+button.sb-params__caret:hover {
+  color: var(--bs-body-color);
+}
+
 /* Fixed slot so parameter names align whether or not a required mark is shown. */
 .sb-params__req {
   display: inline-block;
@@ -677,11 +698,14 @@ code.sb-type {
   right: 0;
 }
 
+/* Match the result block's separator so Calling -> Response doesn't jump. */
 .sb-method-invoker__loading {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bs-border-color);
 }
 
 .sb-history__method {
