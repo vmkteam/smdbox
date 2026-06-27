@@ -106,7 +106,7 @@ export interface AppState extends PersistedState {
     navbarColor?: string;
     theme?: Theme;
   }): void;
-  /** Snapshot the current project config as a named environment. */
+  /** Save the current project config as a named env (upsert by name) and select it. */
   saveEnvironment(name: string): void;
   applyEnvironment(id: string): void;
   renameEnvironment(id: string, name: string): void;
@@ -155,7 +155,19 @@ export const useStore = create<AppState>((set) => ({
     })),
 
   updateSettings: ({ endpoint, headers }) =>
-    set((s) => ({ project: { ...s.project, endpoint, headers }, activeEnvironmentId: null })),
+    set((s) => {
+      const project = { ...s.project, endpoint, headers };
+      // Keep the active environment selected and in sync: editing settings
+      // updates that env in place instead of silently detaching from it.
+      const environments = s.activeEnvironmentId
+        ? s.environments.map((e) =>
+            e.id === s.activeEnvironmentId
+              ? { ...e, endpoint, headers, smdUrl: project.smdUrl }
+              : e,
+          )
+        : s.environments;
+      return { project, environments };
+    }),
 
   clearProject: () => set({ project: initialProject, selected: null, activeEnvironmentId: null }),
 
@@ -204,18 +216,27 @@ export const useStore = create<AppState>((set) => ({
     }),
 
   saveEnvironment: (name) =>
-    set((s) => ({
-      environments: [
-        ...s.environments,
-        {
-          id: crypto.randomUUID(),
-          name,
-          endpoint: s.project.endpoint,
-          smdUrl: s.project.smdUrl,
-          headers: s.project.headers,
-        },
-      ],
-    })),
+    set((s) => {
+      const trimmed = name.trim();
+      const snapshot = {
+        endpoint: s.project.endpoint,
+        smdUrl: s.project.smdUrl,
+        headers: s.project.headers,
+      };
+      // Saving under an existing name updates that env (no duplicate); select it either way.
+      const existing = s.environments.find((e) => e.name === trimmed);
+      if (existing) {
+        return {
+          environments: s.environments.map((e) => (e.id === existing.id ? { ...e, ...snapshot } : e)),
+          activeEnvironmentId: existing.id,
+        };
+      }
+      const id = crypto.randomUUID();
+      return {
+        environments: [...s.environments, { id, name: trimmed, ...snapshot }],
+        activeEnvironmentId: id,
+      };
+    }),
 
   applyEnvironment: (id) =>
     set((s) => {
