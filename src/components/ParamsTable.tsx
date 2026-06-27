@@ -37,6 +37,9 @@ function Rows({ properties, definitions, depth, seen }: RowsProps) {
       {Object.entries(properties).map(([name, node]) => {
         const { rows, seen: childSeen } = childrenOf(node, definitions, seen);
         const enums = node.enum?.filter((v) => v !== undefined && v !== null) ?? [];
+        const typeLabel = resolveType(node);
+        // Drop descriptions that merely echo the type name (zenrpc default).
+        const desc = node.description && node.description !== typeLabel ? node.description : '';
         return (
           <Fragment key={`${depth}:${name}`}>
             <tr>
@@ -44,11 +47,11 @@ function Rows({ properties, definitions, depth, seen }: RowsProps) {
                 <span className="sb-params__req">{node.optional ? null : <RequiredMark />}</span>
                 <CodeChip>{name}</CodeChip>
                 <span className="sb-params__type">
-                  <CodeChip variant="type">{resolveType(node)}</CodeChip>
+                  <CodeChip variant="type">{typeLabel}</CodeChip>
                 </span>
               </td>
               <td>
-                {node.description ? node.description : <span className="sb-muted">—</span>}
+                {desc ? desc : <span className="sb-muted">—</span>}
                 {enums.length > 0 && (
                   <div className="sb-params__enum">
                     {enums.map((v, i) => (

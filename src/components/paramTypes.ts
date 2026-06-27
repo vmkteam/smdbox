@@ -3,6 +3,8 @@
 /** A schema node shown in the params/returns tables (param, property, ...). */
 export interface DescNode {
   type?: string;
+  /** Concrete type name for objects (zenrpc emits the Go struct name here). */
+  typeName?: string;
   description?: string;
   optional?: boolean;
   $ref?: string;
@@ -26,13 +28,16 @@ export function referencedTypeName(node: DescNode): string {
   return '';
 }
 
-/** Human-readable type label, mirroring the legacy resolveType logic. */
+/** Human-readable type label: prefers concrete type names over bare `object`. */
 export function resolveType(node: DescNode): string {
   if (node.type === 'array') {
     return `[]${node.items?.type ?? refName(node.items?.['$ref']) ?? ''}`;
   }
-  if (node.type === 'object' && node.$ref) {
+  if (node.$ref) {
     return refName(node.$ref);
+  }
+  if (node.type === 'object' && node.typeName) {
+    return node.typeName;
   }
   return node.type ?? '';
 }
