@@ -578,6 +578,12 @@ code.sb-type {
   margin-top: 4px;
 }
 
+/* The Try-it-out pane is a query container so its actions can shrink to icons
+   when the pane itself is narrow (independent of the viewport width). */
+.sb-method-invoker {
+  container-type: inline-size;
+}
+
 .sb-actions {
   display: flex;
   align-items: center;
@@ -593,6 +599,20 @@ code.sb-type {
 
 .sb-actions > .btn:first-child {
   margin-right: auto;
+}
+
+/* Narrow pane: drop button labels (keep icons + tooltips) so the row fits. */
+@container (max-width: 460px) {
+  .sb-method-invoker .sb-action-label {
+    display: none;
+  }
+  .sb-method-invoker .sb-actions > .btn {
+    min-width: 0;
+  }
+  .sb-method-invoker .sb-actions .me-1,
+  .sb-method-invoker__from-curl .me-1 {
+    margin-right: 0;
+  }
 }
 
 /* "From curl" lives by the Form/Raw tabs (it loads a request, not exports one). */

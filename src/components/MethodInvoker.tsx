@@ -133,9 +133,9 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
   // Rendered inline to the right of each tab's "Try" button.
   const actions = (
     <>
-      <Button type="button" variant="outline-secondary" onClick={copyCurl}>
+      <Button type="button" variant="outline-secondary" onClick={copyCurl} title="Copy as curl">
         {copied ? <ClipboardCheck className="me-1" /> : <Clipboard className="me-1" />}
-        {copied ? 'Copied' : 'curl'}
+        <span className="sb-action-label">{copied ? 'Copied' : 'curl'}</span>
       </Button>
       <Button
         type="button"
@@ -144,11 +144,11 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
         title="Copy a shareable link with these parameters"
       >
         <Share className="me-1" />
-        {share.copied ? 'Copied' : 'Share'}
+        <span className="sb-action-label">{share.copied ? 'Copied' : 'Share'}</span>
       </Button>
       <Button type="button" variant="outline-secondary" onClick={onSave} title="Save this request">
         <BookmarkPlus className="me-1" />
-        Save
+        <span className="sb-action-label">Save</span>
       </Button>
     </>
   );
@@ -190,7 +190,7 @@ export function MethodInvoker({ schema, method, endpoint, headers }: MethodInvok
           onClick={openCurl}
           title="Build the request from a curl command"
         >
-          <ClipboardPlus className="me-1" /> From curl
+          <ClipboardPlus className="me-1" /> <span className="sb-action-label">From curl</span>
         </Button>
       </div>
 
