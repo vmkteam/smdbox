@@ -44,6 +44,7 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const environments = useStore((s) => s.environments);
   const navbarColor = useStore((s) => s.prefs.navbarColor);
   const setNavbarColor = useStore((s) => s.setNavbarColor);
+  const theme = useStore((s) => s.prefs.theme);
   const idLinks = useStore((s) => s.idLinks);
   const setIdLink = useStore((s) => s.setIdLink);
   const removeIdLink = useStore((s) => s.removeIdLink);
@@ -124,7 +125,17 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
 
   const exportConfig = () => {
     const data = JSON.stringify(
-      { endpoint: effectiveEndpoint, smdUrl: project.smdUrl, headers: headersObj, favorites, saved, environments },
+      {
+        endpoint: effectiveEndpoint,
+        smdUrl: project.smdUrl,
+        headers: headersObj,
+        favorites,
+        saved,
+        environments,
+        idLinks,
+        navbarColor,
+        theme,
+      },
       null,
       2,
     );

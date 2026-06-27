@@ -91,7 +91,10 @@ export interface AppState extends PersistedState {
   clearPrefill(): void;
   saveRequest(name: string, method: string, params: JsonRpcParams): void;
   deleteSaved(id: string): void;
-  /** Import a config bundle: connection + favorites + saved + environments (merged). */
+  /**
+   * Import a config bundle: connection + favorites + saved + environments +
+   * id links + appearance (theme/navbar color), all merged into current state.
+   */
   importConfig(cfg: {
     endpoint?: string;
     smdUrl?: string;
@@ -99,6 +102,9 @@ export interface AppState extends PersistedState {
     favorites?: string[];
     saved?: SavedRequest[];
     environments?: Environment[];
+    idLinks?: Record<string, string>;
+    navbarColor?: string;
+    theme?: Theme;
   }): void;
   /** Snapshot the current project config as a named environment. */
   saveEnvironment(name: string): void;
@@ -188,9 +194,12 @@ export const useStore = create<AppState>((set) => ({
         prefs: {
           ...s.prefs,
           favorites: Array.from(new Set([...s.prefs.favorites, ...(cfg.favorites ?? [])])),
+          navbarColor: cfg.navbarColor ?? s.prefs.navbarColor,
+          theme: cfg.theme ?? s.prefs.theme,
         },
         saved: mergeById(s.saved, cfg.saved),
         environments: mergeById(s.environments, cfg.environments),
+        idLinks: cfg.idLinks ? { ...s.idLinks, ...cfg.idLinks } : s.idLinks,
       };
     }),
 
