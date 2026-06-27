@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { idLinkUrl, lowerRuleKeys } from '../idLinks';
+import { idLinkUrl, lowerRuleKeys, urlValue } from '../idLinks';
 
 // idLinkUrl matches against a lowercased rule map (built once by callers).
 const rules = lowerRuleKeys({
@@ -52,5 +52,19 @@ describe('idLinkUrl', () => {
 
   it('url-encodes the value', () => {
     expect(idLinkUrl(['x'], 'a b', { x: 'https://e/{id}' })).toBe('https://e/a%20b');
+  });
+});
+
+describe('urlValue', () => {
+  it('detects http(s) URL string values', () => {
+    expect(urlValue('https://example.com/a/b')).toBe('https://example.com/a/b');
+    expect(urlValue('http://x.io')).toBe('http://x.io');
+  });
+
+  it('returns null for non-URL or non-string values', () => {
+    expect(urlValue('just text')).toBeNull();
+    expect(urlValue('ftp://x')).toBeNull();
+    expect(urlValue(42)).toBeNull();
+    expect(urlValue('https://has space')).toBeNull();
   });
 });

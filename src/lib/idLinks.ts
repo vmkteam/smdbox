@@ -7,6 +7,13 @@ function build(template: string, raw: string): string {
   return template + encoded;
 }
 
+const HTTP_URL_RE = /^https?:\/\/[^\s"']+$/i;
+
+/** Returns the value itself when it is already an http(s) URL string, else null. */
+export function urlValue(value: unknown): string | null {
+  return typeof value === 'string' && HTTP_URL_RE.test(value) ? value : null;
+}
+
 /** Lowercases rule keys once so `idLinkUrl` can match case-insensitively cheaply. */
 export function lowerRuleKeys(rules: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};

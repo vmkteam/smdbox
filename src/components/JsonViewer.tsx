@@ -14,7 +14,7 @@ import {
 import { JSONTree } from 'react-json-tree';
 
 import { useClipboard } from '../hooks/useClipboard';
-import { idLinkUrl, lowerRuleKeys } from '../lib/idLinks';
+import { idLinkUrl, lowerRuleKeys, urlValue } from '../lib/idLinks';
 import { filterJson } from '../lib/jsonFilter';
 import { highlightJson } from '../lib/jsonHighlight';
 import { useStore } from '../store/store';
@@ -80,7 +80,8 @@ function Tree({ data, light, expandAll, expandLevel, idLinkRules }: TreeProps) {
       shouldExpandNodeInitially={(_keyPath, _data, level) => expandAll || level < expandLevel}
       // Turn ids into open/copy links when the field matches a configured rule (F1).
       valueRenderer={(display, value, ...keyPath) => {
-        const url = idLinkUrl(keyPath as (string | number)[], value, idLinkRules);
+        // A configured id rule wins; otherwise link the value if it is itself a URL.
+        const url = idLinkUrl(keyPath as (string | number)[], value, idLinkRules) ?? urlValue(value);
         if (!url) return display as ReactNode;
         return (
           <span className="sb-json-link">
