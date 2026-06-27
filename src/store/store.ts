@@ -47,6 +47,8 @@ export interface Environment {
   endpoint: string | null;
   smdUrl: string | null;
   headers: Record<string, string>;
+  /** Per-env navbar color; falls back to prefs.navbarColor when empty. */
+  color?: string;
 }
 
 /** A host-provided ready-made connection offered on the setup screen. */
@@ -285,6 +287,7 @@ export const useStore = create<AppState>((set) => ({
         endpoint: s.project.endpoint,
         smdUrl: s.project.smdUrl,
         headers: s.project.headers,
+        color: s.environments.find((e) => e.id === s.activeEnvironmentId)?.color ?? s.prefs.navbarColor,
       };
       // Saving under an existing name updates that env (no duplicate); select it either way.
       const existing = s.environments.find((e) => e.name === trimmed);
@@ -343,7 +346,19 @@ export const useStore = create<AppState>((set) => ({
   toggleTheme: () =>
     set((s) => ({ prefs: { ...s.prefs, theme: s.prefs.theme === 'dark' ? 'light' : 'dark' } })),
 
-  setNavbarColor: (color) => set((s) => ({ prefs: { ...s.prefs, navbarColor: color } })),
+  setNavbarColor: (color) =>
+    set((s) => {
+      // While an environment is active, color binds to that env (so switching
+      // envs changes the navbar); otherwise it sets the global fallback.
+      if (s.activeEnvironmentId) {
+        return {
+          environments: s.environments.map((e) =>
+            e.id === s.activeEnvironmentId ? { ...e, color } : e,
+          ),
+        };
+      }
+      return { prefs: { ...s.prefs, navbarColor: color } };
+    }),
 
   toggleFavorite: (name) =>
     set((s) => ({

@@ -45,6 +45,7 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const environments = useStore((s) => s.environments);
   const navbarColor = useStore((s) => s.prefs.navbarColor);
   const setNavbarColor = useStore((s) => s.setNavbarColor);
+  const activeEnvironmentId = useStore((s) => s.activeEnvironmentId);
   const theme = useStore((s) => s.prefs.theme);
   const idLinks = useStore((s) => s.idLinks);
   const setIdLink = useStore((s) => s.setIdLink);
@@ -64,6 +65,10 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
   const [pendingSubmit, setPendingSubmit] = useState(false);
   const [linkField, setLinkField] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+
+  // Navbar color binds to the active env (if any), else the global pref.
+  const activeEnv = environments.find((e) => e.id === activeEnvironmentId);
+  const currentColor = activeEnv?.color || navbarColor;
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedUrl(smdUrl), DEBOUNCE_MS);
@@ -169,14 +174,14 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
             </Button>
           </div>
 
-          <h5 className="mt-3">Navbar color</h5>
+          <h5 className="mt-3">Navbar color{activeEnv ? ` · ${activeEnv.name}` : ''}</h5>
           <div className="sb-project__swatches">
             {NAVBAR_PRESETS.map((p) => (
               <Button
                 key={p.label}
                 type="button"
                 size="sm"
-                variant={navbarColor === p.color ? 'primary' : 'outline-secondary'}
+                variant={currentColor === p.color ? 'primary' : 'outline-secondary'}
                 onClick={() => setNavbarColor(p.color)}
               >
                 {p.color && (
@@ -187,7 +192,7 @@ export function Project({ mode = 'init', onClose }: ProjectProps) {
             ))}
             <Form.Control
               type="color"
-              value={navbarColor || '#075985'}
+              value={currentColor || '#075985'}
               onChange={(e) => setNavbarColor(e.target.value)}
               title="Custom navbar color"
               aria-label="Custom navbar color"

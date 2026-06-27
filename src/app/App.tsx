@@ -41,7 +41,11 @@ function Workspace() {
   const clearProject = useStore((s) => s.clearProject);
   const theme = useStore((s) => s.prefs.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
-  const navbarColor = useStore((s) => s.prefs.navbarColor);
+  // Active env color wins, so switching envs recolors the navbar; else the global pref.
+  const navbarColor = useStore((s) => {
+    const env = s.environments.find((e) => e.id === s.activeEnvironmentId);
+    return (env?.color || s.prefs.navbarColor) ?? '';
+  });
   const environments = useStore((s) => s.environments);
   const activeEnvironmentId = useStore((s) => s.activeEnvironmentId);
   const saveEnvironment = useStore((s) => s.saveEnvironment);
