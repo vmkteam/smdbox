@@ -137,6 +137,102 @@
   overflow-y: auto;
 }
 
+/* Resizable split panes: sidebar | main (app) and documentation | try-it-out
+   (method viewer). Each draggable pane gets a width from a CSS variable set
+   inline once the user resizes; the fallback keeps the default proportions. */
+.sb-split {
+  display: flex;
+  align-items: stretch;
+}
+
+.sb-split__pane {
+  min-width: 0; /* allow panes to shrink below their content width */
+}
+
+.sb-split--app > .sb-split__pane--sidebar {
+  flex: 0 0 var(--sb-sidebar-w, 25%);
+}
+
+.sb-split--app > .sb-split__pane--main {
+  flex: 1 1 0;
+  padding-left: 12px;
+}
+
+.sb-split--mv > .sb-split__pane--doc {
+  flex: 0 0 var(--sb-doc-w, 58%);
+  padding-right: 12px;
+}
+
+.sb-split--mv > .sb-split__pane--try {
+  flex: 1 1 0;
+  padding-left: 12px;
+}
+
+/* Only one pane shown (eye toggle): it spans the full width. */
+.sb-split--single > .sb-split__pane {
+  flex: 1 1 auto;
+}
+
+/* The drag handle: a slim always-visible divider that brightens on hover. */
+.sb-pane-resizer {
+  position: relative;
+  flex: 0 0 11px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.sb-pane-resizer::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent; /* invisible until hovered */
+  transform: translateX(-50%);
+}
+
+.sb-pane-resizer:hover::after,
+.sb-pane-resizer:active::after {
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--sb-color-primary);
+}
+
+/* Narrow screens: stack the app split (matches the old md grid) and drop the handle. */
+@media (max-width: 767.98px) {
+  .sb-split--app {
+    flex-direction: column;
+  }
+  .sb-split--app > .sb-split__pane {
+    flex: 0 0 auto;
+    width: auto;
+    padding-left: 0;
+  }
+  .sb-split--app > .sb-pane-resizer {
+    display: none;
+  }
+}
+
+/* Stack documentation over try-it-out below lg (matches the old lg grid). */
+@media (max-width: 991.98px) {
+  .sb-split--mv {
+    flex-direction: column;
+  }
+  .sb-split--mv > .sb-split__pane {
+    flex: 0 0 auto;
+    width: auto;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .sb-split--mv > .sb-pane-resizer {
+    display: none;
+  }
+}
+
 .sb-app__loading {
   display: flex;
   align-items: center;
@@ -409,6 +505,13 @@ code.sb-type {
 
 .sb-required {
   color: var(--sb-color-success);
+}
+
+/* Red asterisk marking required params in the Try-it-out form. */
+.sb-required-star {
+  margin-left: 2px;
+  color: var(--sb-color-danger);
+  font-weight: 600;
 }
 
 /* Parameter table: single inlined tree, compact name+type+required cell. */
