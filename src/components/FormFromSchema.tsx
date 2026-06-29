@@ -5,6 +5,7 @@ import { ariaDescribedByIds, examplesId, getInputProps, getTemplate, getUiOption
 import type {
   ArrayFieldTemplateProps,
   BaseInputTemplateProps,
+  FieldTemplateProps,
   IconButtonProps,
   RJSFSchema,
 } from '@rjsf/utils';
@@ -150,6 +151,66 @@ function ArrayFieldTemplate(props: ArrayFieldTemplateProps) {
   );
 }
 
+// Mirrors @rjsf/react-bootstrap's FieldTemplate, but renders the required marker
+// as a prominent red asterisk after the label so the Try-it-out form makes clear
+// which params must be filled. "Required" follows the SMD `optional` flag
+// (required unless `optional` is truthy), matching the documentation table — the
+// SMD→JSON Schema conversion carries `optional` rather than a `required` array.
+function FieldTemplate(props: FieldTemplateProps) {
+  const {
+    id, children, displayLabel, rawErrors = [], errors, help, description, rawDescription,
+    classNames, style, disabled, label, hidden, onKeyRename, onKeyRenameBlur,
+    onRemoveProperty, readonly, required, schema, uiSchema, registry,
+  } = props;
+  const uiOptions = getUiOptions(uiSchema);
+  const WrapIfAdditionalTemplate = getTemplate('WrapIfAdditionalTemplate', registry, uiOptions);
+  if (hidden) {
+    return <div className="hidden">{children}</div>;
+  }
+  const isCheckbox = uiOptions.widget === 'checkbox';
+  const isRequired = !(schema as { optional?: boolean }).optional;
+  return (
+    <WrapIfAdditionalTemplate
+      classNames={classNames}
+      style={style}
+      disabled={disabled}
+      id={id}
+      label={label}
+      displayLabel={displayLabel}
+      rawDescription={rawDescription}
+      onKeyRename={onKeyRename}
+      onKeyRenameBlur={onKeyRenameBlur}
+      onRemoveProperty={onRemoveProperty}
+      readonly={readonly}
+      required={required}
+      schema={schema}
+      uiSchema={uiSchema}
+      registry={registry}
+    >
+      <BsForm.Group>
+        {displayLabel && !isCheckbox && (
+          <BsForm.Label htmlFor={id} className={rawErrors.length > 0 ? 'text-danger' : ''}>
+            {label}
+            {isRequired && (
+              <span className="sb-required-star" aria-label="required" title="required">
+                *
+              </span>
+            )}
+          </BsForm.Label>
+        )}
+        {children}
+        {displayLabel && rawDescription && !isCheckbox && (
+          <BsForm.Text className={rawErrors.length > 0 ? 'text-danger' : 'text-muted'}>
+            {description}
+          </BsForm.Text>
+        )}
+        {errors}
+        {help}
+      </BsForm.Group>
+    </WrapIfAdditionalTemplate>
+  );
+}
+
 interface FormFromSchemaProps {
   schema: JsonSchema;
   formData: Record<string, unknown>;
@@ -180,7 +241,7 @@ export function FormFromSchema({ schema, formData, onChange, onSubmit, actions }
         schema={formSchema as RJSFSchema}
         formData={formData}
         validator={validator}
-        templates={{ ButtonTemplates: buttonTemplates, ArrayFieldTemplate, BaseInputTemplate }}
+        templates={{ ButtonTemplates: buttonTemplates, ArrayFieldTemplate, BaseInputTemplate, FieldTemplate }}
         onChange={(e) => onChange(e.formData as Record<string, unknown>)}
         onSubmit={(e) => onSubmit(e.formData as Record<string, unknown>)}
         onError={(errors) => console.error(errors)}

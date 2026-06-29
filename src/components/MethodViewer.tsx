@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
-import { Alert, Button, Col, Row } from 'react-bootstrap';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Alert, Button } from 'react-bootstrap';
 import { Eye, EyeSlash } from 'react-bootstrap-icons';
 
+import { usePaneWidth } from '../hooks/usePaneWidth';
 import { smdToJsonSchema } from '../lib/smdToJsonSchema';
 import { useStore } from '../store/store';
 import type { SmdService } from '../types/smd';
 import { MethodDescription } from './MethodDescription';
 import { MethodInvoker } from './MethodInvoker';
+import { PaneResizer } from './PaneResizer';
 
 /** Main pane: documentation and try-it-out for the selected method. */
 export function MethodViewer({ services }: { services: Record<string, SmdService> }) {
@@ -14,6 +16,18 @@ export function MethodViewer({ services }: { services: Record<string, SmdService
   const { endpoint, headers } = useStore((s) => s.project);
   const [showInfo, setShowInfo] = useState(true);
   const [showTry, setShowTry] = useState(true);
+
+  // Draggable divider between the documentation and the try-it-out panes.
+  const [docW, setDocW, resetDocW] = usePaneWidth('mv-doc');
+  const splitRef = useRef<HTMLDivElement>(null);
+  const onDocResize = useCallback(
+    (w: number) => {
+      const total = splitRef.current?.clientWidth ?? 0;
+      // Keep both panes usable: documentation >= 280px, try-it-out >= 320px.
+      setDocW(Math.max(280, Math.min(w, total - 320)));
+    },
+    [setDocW],
+  );
 
   const service = selected ? services[selected] : undefined;
   const schema = useMemo(() => (service ? smdToJsonSchema(service) : null), [service]);
@@ -26,11 +40,19 @@ export function MethodViewer({ services }: { services: Record<string, SmdService
     );
   }
 
+  const bothShown = showInfo && showTry;
+
   return (
     <div className="sb-method-viewer">
-      <Row>
+      <div
+        className={`sb-split sb-split--mv${bothShown ? '' : ' sb-split--single'}`}
+        ref={splitRef}
+        style={
+          bothShown && docW != null ? ({ '--sb-doc-w': `${docW}px` } as React.CSSProperties) : undefined
+        }
+      >
         {showInfo && (
-          <Col xs={12} lg={showTry ? 7 : 12}>
+          <div className="sb-split__pane sb-split__pane--doc">
             <h3 className="sb-method-viewer__title">
               {selected}
               {showTry ? (
@@ -56,11 +78,15 @@ export function MethodViewer({ services }: { services: Record<string, SmdService
               )}
             </h3>
             <MethodDescription service={service} />
-          </Col>
+          </div>
+        )}
+
+        {bothShown && (
+          <PaneResizer label="Resize documentation" onResize={onDocResize} onReset={resetDocW} />
         )}
 
         {showTry && (
-          <Col xs={12} lg={showInfo ? 5 : 12}>
+          <div className="sb-split__pane sb-split__pane--try">
             <h3 className="sb-method-viewer__title">
               Try it out
               {showInfo ? (
@@ -92,9 +118,9 @@ export function MethodViewer({ services }: { services: Record<string, SmdService
               endpoint={endpoint}
               headers={headers}
             />
-          </Col>
+          </div>
         )}
-      </Row>
+      </div>
     </div>
   );
 }

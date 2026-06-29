@@ -3,12 +3,10 @@ import {
   Alert,
   Button,
   ButtonGroup,
-  Col,
   Container,
   Dropdown,
   Modal,
   Navbar,
-  Row,
   Spinner,
 } from 'react-bootstrap';
 import {
@@ -29,9 +27,11 @@ import {
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { History } from '../components/History';
 import { MethodViewer } from '../components/MethodViewer';
+import { PaneResizer } from '../components/PaneResizer';
 import { Project } from '../components/Project';
 import { Saved } from '../components/Saved';
 import { Sidebar } from '../components/Sidebar';
+import { usePaneWidth } from '../hooks/usePaneWidth';
 import { refreshSmd, useSmd } from '../data/queries';
 import { selectNavbarColor, useStore } from '../store/store';
 import { useMethodHash } from './useMethodHash';
@@ -69,6 +69,18 @@ function Workspace() {
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+
+  // Draggable divider between the methods list and the main pane.
+  const [sidebarW, setSidebarW, resetSidebarW] = usePaneWidth('sidebar');
+  const mainSplitRef = useRef<HTMLDivElement>(null);
+  const onSidebarResize = useCallback(
+    (w: number) => {
+      const total = mainSplitRef.current?.clientWidth ?? 0;
+      // Keep the list usable and leave the main pane at least 420px.
+      setSidebarW(Math.max(200, Math.min(w, total - 420)));
+    },
+    [setSidebarW],
+  );
 
   // Scope the Bootstrap theme to the whole document (covers portalled modals).
   useEffect(() => {
@@ -255,14 +267,19 @@ function Workspace() {
             </Alert>
           )}
           {services && (
-            <Row>
-              <Col md={3} className="sb-app__column">
+            <div
+              className="sb-split sb-split--app"
+              ref={mainSplitRef}
+              style={sidebarW != null ? ({ '--sb-sidebar-w': `${sidebarW}px` } as React.CSSProperties) : undefined}
+            >
+              <div className="sb-split__pane sb-split__pane--sidebar sb-app__column">
                 <Sidebar services={services} />
-              </Col>
-              <Col md={9} className="sb-app__column">
+              </div>
+              <PaneResizer label="Resize methods list" onResize={onSidebarResize} onReset={resetSidebarW} />
+              <div className="sb-split__pane sb-split__pane--main sb-app__column">
                 <MethodViewer services={services} />
-              </Col>
-            </Row>
+              </div>
+            </div>
           )}
 
           <Modal show={showSettings} onHide={() => setShowSettings(false)}>
